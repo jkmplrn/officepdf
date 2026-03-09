@@ -4,553 +4,463 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>OfficePDF – Dewan Architects</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <style>
-  :root {
-    --red: #E8372B;
-    --red-dark: #c22d22;
-    --red-light: #fdf1f0;
-    --charcoal: #1a1a1a;
-    --mid: #5a5a5a;
-    --light: #f5f4f2;
-    --white: #ffffff;
-    --border: #e0ddd8;
-    --radius: 14px;
-    --font-head: 'DM Serif Display', serif;
-    --font-body: 'DM Sans', sans-serif;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font-body); background: var(--light); color: var(--charcoal); min-height: 100vh; overflow-x: hidden; }
+:root {
+  --red: #E8372B; --red-dark: #c22d22; --red-light: #fdf1f0;
+  --charcoal: #1a1a1a; --mid: #5a5a5a; --light: #f5f4f2;
+  --white: #fff; --border: #e0ddd8; --radius: 14px;
+  --fh: 'DM Serif Display', serif; --fb: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--fb); background: var(--light); color: var(--charcoal); min-height: 100vh; }
 
-  /* AUTH */
-  #auth-screen {
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #fff8f7 0%, #f5f4f2 60%, #fdecea 100%);
-    position: relative; overflow: hidden;
-  }
-  #auth-screen::before {
-    content: ''; position: absolute; width: 600px; height: 600px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(232,55,43,0.08) 0%, transparent 70%);
-    top: -150px; right: -150px; pointer-events: none;
-  }
-  .auth-card {
-    background: var(--white); border-radius: 24px; padding: 52px 48px;
-    width: 100%; max-width: 440px; box-shadow: 0 8px 48px rgba(0,0,0,0.1);
-    position: relative; z-index: 1;
-    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
-  .auth-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; }
-  .logo-icon {
-    width: 40px; height: 40px; background: var(--red); border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .logo-icon svg { width: 22px; height: 22px; fill: white; }
-  .auth-logo span { font-family: var(--font-head); font-size: 1.5rem; color: var(--charcoal); }
-  .auth-card h1 { font-family: var(--font-head); font-size: 1.9rem; line-height: 1.2; margin-bottom: 8px; }
-  .auth-card .subtitle { color: var(--mid); font-size: 0.92rem; margin-bottom: 32px; line-height: 1.5; }
-  .auth-card .subtitle span { color: var(--red); font-weight: 500; }
-  .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 22px; }
-  .field-label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mid); display: block; }
-  .field-group input {
-    width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: 10px;
-    font-family: var(--font-body); font-size: 0.95rem; color: var(--charcoal);
-    background: #fafafa; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .field-group input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(232,55,43,0.1); background: white; }
-  .btn-primary {
-    width: 100%; padding: 15px; background: var(--red); color: white; border: none;
-    border-radius: 10px; font-family: var(--font-body); font-size: 1rem; font-weight: 600;
-    cursor: pointer; transition: background 0.2s, box-shadow 0.2s; letter-spacing: 0.02em;
-  }
-  .btn-primary:hover { background: var(--red-dark); box-shadow: 0 4px 16px rgba(232,55,43,0.3); }
-  .auth-error { color: var(--red); font-size: 0.85rem; margin-top: 10px; min-height: 20px; font-weight: 500; }
-  .auth-footer { margin-top: 28px; font-size: 0.8rem; color: #aaa; text-align: center; line-height: 1.6; }
+#auth-screen {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #fff8f7 0%, #f5f4f2 60%, #fdecea 100%);
+}
+.auth-card {
+  background: #fff; border-radius: 24px; padding: 52px 48px; width: 100%; max-width: 440px;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.1);
+}
+.logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; }
+.logo-box { width: 40px; height: 40px; background: var(--red); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.logo-box svg { width: 22px; height: 22px; fill: white; }
+.logo-name { font-family: var(--fh); font-size: 1.5rem; }
+.auth-card h1 { font-family: var(--fh); font-size: 1.9rem; margin-bottom: 8px; }
+.auth-sub { color: var(--mid); font-size: 0.92rem; margin-bottom: 32px; line-height: 1.5; }
+.auth-sub strong { color: var(--red); font-weight: 500; }
+.flabel { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mid); display: block; margin-bottom: 8px; }
+#email-input {
+  width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: 10px;
+  font-family: var(--fb); font-size: 0.95rem; background: #fafafa; outline: none; margin-bottom: 20px;
+}
+#email-input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(232,55,43,0.1); background: #fff; }
+#signin-btn {
+  width: 100%; padding: 15px; background: var(--red); color: #fff; border: none;
+  border-radius: 10px; font-family: var(--fb); font-size: 1rem; font-weight: 600; cursor: pointer;
+}
+#signin-btn:hover { background: var(--red-dark); }
+#auth-error { color: var(--red); font-size: 0.85rem; margin-top: 10px; min-height: 18px; font-weight: 500; }
+.auth-note { margin-top: 24px; font-size: 0.8rem; color: #aaa; text-align: center; }
 
-  /* APP */
-  #app-screen { display: none; min-height: 100vh; flex-direction: column; }
-  nav {
-    background: white; border-bottom: 1px solid var(--border); padding: 0 32px; height: 64px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 12px rgba(0,0,0,0.04);
-  }
-  .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
-  .nav-logo .logo-icon { width: 34px; height: 34px; border-radius: 8px; }
-  .nav-logo .logo-icon svg { width: 18px; height: 18px; }
-  .nav-logo span { font-family: var(--font-head); font-size: 1.3rem; }
-  .nav-right { display: flex; align-items: center; gap: 18px; }
-  .user-badge {
-    display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px;
-    background: var(--light); border-radius: 50px; font-size: 0.85rem; color: var(--mid);
-  }
-  .user-avatar {
-    width: 30px; height: 30px; background: var(--red); border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-  }
-  .btn-signout {
-    padding: 8px 18px; background: transparent; border: 1.5px solid var(--border);
-    border-radius: 8px; font-family: var(--font-body); font-size: 0.85rem; font-weight: 500;
-    color: var(--mid); cursor: pointer; transition: all 0.2s;
-  }
-  .btn-signout:hover { border-color: var(--red); color: var(--red); }
+#app-screen { display: none; flex-direction: column; min-height: 100vh; }
+nav {
+  background: #fff; border-bottom: 1px solid var(--border); height: 64px; padding: 0 32px;
+  display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+.nav-logo .logo-box { width: 34px; height: 34px; border-radius: 8px; }
+.nav-logo .logo-box svg { width: 18px; height: 18px; }
+.nav-logo .logo-name { font-size: 1.3rem; }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.user-badge { display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; background: var(--light); border-radius: 50px; font-size: 0.85rem; color: var(--mid); }
+.avatar { width: 30px; height: 30px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: 700; }
+#signout-btn { padding: 8px 18px; background: transparent; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--fb); font-size: 0.85rem; font-weight: 500; color: var(--mid); cursor: pointer; }
+#signout-btn:hover { border-color: var(--red); color: var(--red); }
 
-  /* HERO */
-  .hero {
-    background: white; padding: 56px 32px 48px; text-align: center;
-    border-bottom: 1px solid var(--border); position: relative; overflow: hidden;
-  }
-  .hero::before {
-    content: ''; position: absolute; inset: 0;
-    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(232,55,43,0.05) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .hero h2 { font-family: var(--font-head); font-size: clamp(2rem, 4vw, 2.8rem); margin-bottom: 12px; position: relative; }
-  .hero h2 em { font-style: italic; color: var(--red); }
-  .hero p { color: var(--mid); font-size: 1rem; max-width: 520px; margin: 0 auto; line-height: 1.6; position: relative; }
+.hero { background: #fff; padding: 56px 32px 48px; text-align: center; border-bottom: 1px solid var(--border); }
+.hero h2 { font-family: var(--fh); font-size: clamp(2rem,4vw,2.8rem); margin-bottom: 12px; }
+.hero h2 em { font-style: italic; color: var(--red); }
+.hero p { color: var(--mid); max-width: 520px; margin: 0 auto; line-height: 1.6; }
 
-  /* TOOLS */
-  .tools-section { padding: 48px 32px 64px; max-width: 1200px; margin: 0 auto; width: 100%; }
-  .section-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 28px; }
-  .section-header h3 { font-family: var(--font-head); font-size: 1.4rem; }
-  .pill {
-    background: var(--red-light); color: var(--red); font-size: 0.75rem; font-weight: 600;
-    padding: 3px 10px; border-radius: 50px; letter-spacing: 0.05em; text-transform: uppercase;
-  }
-  .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; }
-  .tool-card {
-    background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius);
-    padding: 28px 22px 24px; cursor: pointer;
-    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-    position: relative; overflow: hidden; text-align: left;
-  }
-  .tool-card::before {
-    content: ''; position: absolute; inset: 0;
-    background: var(--card-bg, var(--red-light)); opacity: 0; transition: opacity 0.22s;
-  }
-  .tool-card:hover { border-color: var(--red); transform: translateY(-3px); box-shadow: 0 8px 28px rgba(232,55,43,0.14); }
-  .tool-card:hover::before { opacity: 1; }
-  .tool-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.4rem; position: relative; }
-  .tool-card h4 { font-size: 0.98rem; font-weight: 600; margin-bottom: 6px; position: relative; }
-  .tool-card p { font-size: 0.8rem; color: var(--mid); line-height: 1.5; position: relative; }
+.tools-wrap { padding: 48px 32px 64px; max-width: 1200px; margin: 0 auto; width: 100%; }
+.sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 28px; }
+.sec-head h3 { font-family: var(--fh); font-size: 1.4rem; }
+.pill { background: var(--red-light); color: var(--red); font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 50px; text-transform: uppercase; letter-spacing: 0.05em; }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; }
+.tcard { background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 28px 22px 24px; cursor: pointer; transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s; }
+.tcard:hover { border-color: var(--red); transform: translateY(-3px); box-shadow: 0 8px 28px rgba(232,55,43,0.14); }
+.tcard-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.5rem; }
+.tcard h4 { font-size: 0.98rem; font-weight: 600; margin-bottom: 6px; }
+.tcard p { font-size: 0.8rem; color: var(--mid); line-height: 1.5; }
 
-  /* MODAL */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(20,20,20,0.55); backdrop-filter: blur(4px);
-    z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px;
-  }
-  .modal-overlay.open { display: flex; animation: fadeIn 0.2s; }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  .modal {
-    background: white; border-radius: 20px; padding: 40px; max-width: 540px; width: 100%;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.18);
-    animation: modalUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    position: relative; max-height: 90vh; overflow-y: auto;
-  }
-  @keyframes modalUp { from { opacity: 0; transform: translateY(30px) scale(0.97); } to { opacity: 1; transform: none; } }
-  .modal-close {
-    position: absolute; top: 18px; right: 18px; width: 32px; height: 32px;
-    background: var(--light); border: none; border-radius: 50%; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; color: var(--mid); font-size: 1.1rem;
-  }
-  .modal-close:hover { background: #e8e4e0; }
-  .modal h3 { font-family: var(--font-head); font-size: 1.6rem; margin-bottom: 8px; padding-right: 32px; }
-  .modal-sub { color: var(--mid); font-size: 0.88rem; margin-bottom: 28px; line-height: 1.5; }
-  .dropzone {
-    border: 2px dashed var(--border); border-radius: 14px; padding: 40px 24px;
-    text-align: center; cursor: pointer; transition: all 0.2s; background: var(--light); position: relative;
-  }
-  .dropzone:hover, .dropzone.active { border-color: var(--red); background: var(--red-light); }
-  .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .dropzone-icon { font-size: 2.4rem; margin-bottom: 12px; }
-  .dropzone h4 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
-  .dropzone p { font-size: 0.82rem; color: var(--mid); }
-  .dropzone .formats { margin-top: 10px; font-size: 0.75rem; color: #bbb; font-weight: 500; letter-spacing: 0.05em; }
-  .file-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
-  .file-item { display: flex; align-items: center; gap: 10px; background: var(--light); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; }
-  .fi-icon { font-size: 1.1rem; flex-shrink: 0; }
-  .fi-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .fi-size { color: var(--mid); font-size: 0.78rem; flex-shrink: 0; }
-  .fi-remove { background: none; border: none; cursor: pointer; color: #ccc; font-size: 1rem; padding: 2px 6px; border-radius: 4px; }
-  .fi-remove:hover { color: var(--red); }
-  .modal-actions { margin-top: 24px; display: flex; gap: 12px; }
-  .btn-action {
-    flex: 1; padding: 14px; border-radius: 10px; font-family: var(--font-body);
-    font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-  }
-  .btn-action.primary { background: var(--red); color: white; }
-  .btn-action.primary:hover { background: var(--red-dark); box-shadow: 0 4px 14px rgba(232,55,43,0.3); }
-  .btn-action.secondary { background: var(--light); color: var(--mid); border: 1.5px solid var(--border); }
-  .btn-action.secondary:hover { border-color: var(--charcoal); color: var(--charcoal); }
-  .progress-bar-wrap { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; margin-top: 16px; display: none; }
-  .progress-bar-wrap.show { display: block; }
-  .progress-bar { height: 100%; background: var(--red); border-radius: 99px; width: 0%; transition: width 0.4s; }
-  .result-msg { margin-top: 16px; padding: 14px 16px; border-radius: 10px; font-size: 0.88rem; font-weight: 500; display: none; white-space: pre-wrap; }
-  .result-msg.success { background: #edfaf4; color: #1d8348; display: block; }
-  .result-msg.error { background: #fdf0ef; color: var(--red); display: block; }
-  .options-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
-  .option-chip { padding: 8px 16px; border-radius: 8px; border: 1.5px solid var(--border); background: white; font-size: 0.82rem; font-weight: 500; cursor: pointer; transition: all 0.15s; color: var(--mid); }
-  .option-chip:hover, .option-chip.active { border-color: var(--red); color: var(--red); background: var(--red-light); }
-  .option-label { font-size: 0.8rem; font-weight: 600; color: var(--mid); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 18px; margin-bottom: 8px; }
-  .disclaimer { text-align: center; padding: 20px 32px; font-size: 0.78rem; color: #bbb; border-top: 1px solid var(--border); }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+.overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 20px; padding: 40px; max-width: 540px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; max-height: 90vh; overflow-y: auto; }
+#modal-close { position: absolute; top: 18px; right: 18px; width: 32px; height: 32px; background: var(--light); border: none; border-radius: 50%; cursor: pointer; font-size: 1rem; color: var(--mid); }
+.modal h3 { font-family: var(--fh); font-size: 1.6rem; margin-bottom: 8px; padding-right: 32px; }
+.modal-desc { color: var(--mid); font-size: 0.88rem; margin-bottom: 20px; line-height: 1.5; }
+.opt-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mid); margin: 16px 0 8px; }
+.opt-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.chip { padding: 8px 16px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; font-size: 0.82rem; font-weight: 500; cursor: pointer; color: var(--mid); }
+.chip.active, .chip:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+.dropzone { border: 2px dashed var(--border); border-radius: 14px; padding: 36px 24px; text-align: center; background: var(--light); position: relative; cursor: pointer; }
+.dropzone.over { border-color: var(--red); background: var(--red-light); }
+.dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.dz-icon { font-size: 2.2rem; margin-bottom: 10px; }
+.dropzone h4 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+.dropzone p { font-size: 0.82rem; color: var(--mid); }
+.dz-fmt { margin-top: 8px; font-size: 0.75rem; color: #bbb; letter-spacing: 0.05em; }
+.file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.fitem { display: flex; align-items: center; gap: 10px; background: var(--light); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; }
+.fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fsize { color: var(--mid); font-size: 0.78rem; }
+.fremove { background: none; border: none; cursor: pointer; color: #ccc; font-size: 0.95rem; padding: 2px 6px; }
+.fremove:hover { color: var(--red); }
+.prog-wrap { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; margin-top: 14px; display: none; }
+.prog-wrap.show { display: block; }
+.prog-bar { height: 100%; background: var(--red); border-radius: 99px; width: 0%; transition: width 0.3s; }
+.result { margin-top: 14px; padding: 14px 16px; border-radius: 10px; font-size: 0.88rem; font-weight: 500; display: none; white-space: pre-wrap; line-height: 1.5; }
+.result.ok  { background: #edfaf4; color: #1a7a44; display: block; }
+.result.err { background: #fdf0ef; color: var(--red); display: block; }
+.modal-btns { margin-top: 20px; display: flex; gap: 12px; }
+.mbtn { flex: 1; padding: 14px; border-radius: 10px; font-family: var(--fb); font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; }
+.mbtn.pri { background: var(--red); color: #fff; }
+.mbtn.pri:hover { background: var(--red-dark); }
+.mbtn.sec { background: var(--light); color: var(--mid); border: 1.5px solid var(--border); }
+.mbtn.sec:hover { border-color: #333; color: #333; }
+.footer { text-align: center; padding: 20px 32px; font-size: 0.78rem; color: #bbb; border-top: 1px solid var(--border); }
 
-  @media (max-width: 640px) {
-    .auth-card { padding: 36px 24px; }
-    .tools-section { padding: 32px 16px 48px; }
-    nav { padding: 0 16px; }
-    .hero { padding: 40px 20px 32px; }
-    .tools-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .modal { padding: 28px 20px; }
-  }
+@media (max-width: 640px) {
+  .auth-card { padding: 36px 24px; }
+  nav { padding: 0 16px; }
+  .tools-wrap { padding: 28px 16px 48px; }
+  .tgrid { grid-template-columns: repeat(2,1fr); gap: 12px; }
+  .modal { padding: 28px 20px; }
+}
 </style>
 </head>
 <body>
 
-<!-- AUTH SCREEN -->
+<!-- LOGIN -->
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="auth-logo">
-      <div class="logo-icon">
+    <div class="logo-row">
+      <div class="logo-box">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
       </div>
-      <span>OfficePDF</span>
+      <span class="logo-name">OfficePDF</span>
     </div>
     <h1>Welcome</h1>
-    <p class="subtitle">Enter your <span>@dewan-architects.com</span> email to access the PDF toolkit.</p>
-    <div class="field-group">
-      <label class="field-label" for="email-input">Work Email</label>
-      <input type="text" id="email-input" placeholder="you@dewan-architects.com" autocomplete="email" />
-    </div>
-    <button class="btn-primary" id="signin-btn">Access Toolkit &rarr;</button>
-    <div class="auth-error" id="auth-error"></div>
-    <div class="auth-footer">
-      &#128274; Only <strong>@dewan-architects.com</strong> email addresses are allowed.
-    </div>
+    <p class="auth-sub">Enter your <strong>@dewan-architects.com</strong> email to continue.</p>
+    <label class="flabel" for="email-input">Work Email</label>
+    <input id="email-input" type="text" placeholder="you@dewan-architects.com" autocomplete="off" spellcheck="false" />
+    <button id="signin-btn">Access Toolkit</button>
+    <div id="auth-error"></div>
+    <p class="auth-note">Only @dewan-architects.com addresses are permitted.</p>
   </div>
 </div>
 
-<!-- APP SCREEN -->
+<!-- APP -->
 <div id="app-screen">
   <nav>
     <a class="nav-logo" href="#">
-      <div class="logo-icon">
+      <div class="logo-box">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
       </div>
-      <span>OfficePDF</span>
+      <span class="logo-name">OfficePDF</span>
     </a>
     <div class="nav-right">
       <div class="user-badge">
-        <div class="user-avatar" id="user-initials">--</div>
-        <span id="user-email-display"></span>
+        <div class="avatar" id="uinitials">DA</div>
+        <span id="uemail"></span>
       </div>
-      <button class="btn-signout" id="signout-btn">Sign out</button>
+      <button id="signout-btn">Sign out</button>
     </div>
   </nav>
-
   <div class="hero">
     <h2>Every PDF tool your office <em>needs.</em></h2>
-    <p>Merge, split, compress, convert &mdash; all in one place, private and secure for your team.</p>
+    <p>Merge, split, compress, convert — all in one place for Dewan Architects.</p>
   </div>
-
-  <div class="tools-section">
-    <div class="section-header">
-      <h3>Organize &amp; Combine</h3>
-      <span class="pill">PDF Tools</span>
-    </div>
-    <div class="tools-grid" id="tools-grid"></div>
-
-    <div class="section-header" style="margin-top:44px;">
-      <h3>Convert Files</h3>
-      <span class="pill">Convert</span>
-    </div>
-    <div class="tools-grid" id="convert-grid"></div>
+  <div class="tools-wrap">
+    <div class="sec-head"><h3>Organize &amp; Combine</h3><span class="pill">PDF Tools</span></div>
+    <div class="tgrid" id="grid1"></div>
+    <div class="sec-head" style="margin-top:44px"><h3>Convert Files</h3><span class="pill">Convert</span></div>
+    <div class="tgrid" id="grid2"></div>
   </div>
-
-  <div class="disclaimer">
-    OfficePDF is an internal tool for Dewan Architects. Files are processed in your browser and never uploaded to any server.
-  </div>
+  <div class="footer">OfficePDF — internal tool for Dewan Architects. Files never leave your browser.</div>
 </div>
 
 <!-- MODAL -->
-<div class="modal-overlay" id="modal-overlay">
-  <div class="modal" id="modal-box">
-    <button class="modal-close" id="modal-close-btn">&#10005;</button>
-    <div id="modal-icon" style="font-size:2rem;margin-bottom:10px;"></div>
-    <h3 id="modal-title"></h3>
-    <p class="modal-sub" id="modal-sub"></p>
-    <div id="modal-options"></div>
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button id="modal-close">&#10005;</button>
+    <div id="m-icon" style="font-size:2rem;margin-bottom:8px"></div>
+    <h3 id="m-title"></h3>
+    <p class="modal-desc" id="m-desc"></p>
+    <div id="m-opts"></div>
     <div class="dropzone" id="dropzone">
       <input type="file" id="file-input" />
-      <div class="dropzone-icon">&#128194;</div>
+      <div class="dz-icon">&#128194;</div>
       <h4>Drop files here or click to browse</h4>
-      <p>Select one or more files from your device</p>
-      <div class="formats" id="formats-hint">PDF files only</div>
+      <p>Select files from your device</p>
+      <div class="dz-fmt" id="dz-fmt">PDF files only</div>
     </div>
     <div class="file-list" id="file-list"></div>
-    <div class="progress-bar-wrap" id="progress-wrap">
-      <div class="progress-bar" id="progress-bar"></div>
-    </div>
-    <div class="result-msg" id="result-msg"></div>
-    <div class="modal-actions">
-      <button class="btn-action secondary" id="clear-btn">Clear</button>
-      <button class="btn-action primary" id="run-btn">
-        <span id="action-btn-label">Process</span>
-      </button>
+    <div class="prog-wrap" id="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+    <div class="result" id="result"></div>
+    <div class="modal-btns">
+      <button class="mbtn sec" id="clear-btn">Clear</button>
+      <button class="mbtn pri" id="run-btn"><span id="run-label">Process</span></button>
     </div>
   </div>
 </div>
 
 <script>
-(function () {
-  var DOMAIN = 'dewan-architects.com';
+(function(){
 
-  var pdfTools = [
-    { id:'merge',    icon:'&#128279;', label:'Merge PDF',      desc:'Combine multiple PDFs into one document.',           action:'Merge PDFs',     formats:'PDF files only', accept:'.pdf', multiple:true,  color:'#fdecea' },
-    { id:'split',    icon:'&#9986;',   label:'Split PDF',       desc:'Divide a PDF into separate pages or ranges.',        action:'Split PDF',      formats:'PDF files only', accept:'.pdf', multiple:false, color:'#fdf3e3', options:{ label:'Split mode', chips:['Every page','By range','Extract pages'] } },
-    { id:'compress', icon:'&#128230;', label:'Compress PDF',    desc:'Reduce file size while keeping quality.',            action:'Compress',       formats:'PDF files only', accept:'.pdf', multiple:false, color:'#e8f4fd', options:{ label:'Compression level', chips:['Low (best quality)','Medium','High (smallest size)'] } },
-    { id:'rotate',   icon:'&#128260;', label:'Rotate PDF',      desc:'Rotate pages by 90, 180, or 270 degrees.',          action:'Rotate',         formats:'PDF files only', accept:'.pdf', multiple:false, color:'#edf9f0', options:{ label:'Rotation', chips:['90 Clockwise','180','90 Counter-clockwise'] } },
-    { id:'protect',  icon:'&#128274;', label:'Protect PDF',     desc:'Add a password to secure your PDF.',                 action:'Add Password',   formats:'PDF files only', accept:'.pdf', multiple:false, color:'#f3eefa' },
-    { id:'unlock',   icon:'&#128275;', label:'Unlock PDF',      desc:'Remove password from a protected PDF.',              action:'Unlock',         formats:'PDF files only', accept:'.pdf', multiple:false, color:'#fef9e7' },
-    { id:'reorder',  icon:'&#128203;', label:'Reorder Pages',   desc:'Rearrange pages in any order.',                      action:'Reorder & Save', formats:'PDF files only', accept:'.pdf', multiple:false, color:'#fdecea' },
-    { id:'sign',     icon:'&#9997;',   label:'Sign PDF',        desc:'Add your digital signature to documents.',           action:'Add Signature',  formats:'PDF files only', accept:'.pdf', multiple:false, color:'#e3f2fd' }
-  ];
+var ALLOWED_DOMAIN = 'dewan-architects.com';
 
-  var convertTools = [
-    { id:'pdf2word',  icon:'&#128221;', label:'PDF to Word',   desc:'Convert PDFs to editable .docx files.',           action:'Convert to Word',  formats:'.pdf files',        accept:'.pdf',       multiple:false, color:'#e8f0fe' },
-    { id:'pdf2excel', icon:'&#128202;', label:'PDF to Excel',  desc:'Extract tables from PDF to spreadsheet.',         action:'Convert to Excel', formats:'.pdf files',        accept:'.pdf',       multiple:false, color:'#e6f4ea' },
-    { id:'pdf2ppt',   icon:'&#128209;', label:'PDF to PPT',    desc:'Turn PDF slides into editable PowerPoint.',       action:'Convert to PPT',   formats:'.pdf files',        accept:'.pdf',       multiple:false, color:'#fce8e6' },
-    { id:'word2pdf',  icon:'&#128292;', label:'Word to PDF',   desc:'Convert .doc/.docx files to PDF.',                action:'Convert to PDF',   formats:'.doc, .docx files', accept:'.doc,.docx', multiple:false, color:'#e8f0fe' },
-    { id:'excel2pdf', icon:'&#128200;', label:'Excel to PDF',  desc:'Convert .xls/.xlsx spreadsheets to PDF.',         action:'Convert to PDF',   formats:'.xls, .xlsx files', accept:'.xls,.xlsx', multiple:false, color:'#e6f4ea' },
-    { id:'ppt2pdf',   icon:'&#127919;', label:'PPT to PDF',    desc:'Convert PowerPoint presentations to PDF.',        action:'Convert to PDF',   formats:'.ppt, .pptx files', accept:'.ppt,.pptx', multiple:false, color:'#fce8e6' },
-    { id:'img2pdf',   icon:'&#128444;', label:'Image to PDF',  desc:'Convert JPG, PNG images into a PDF.',             action:'Convert to PDF',   formats:'JPG, PNG, WEBP',    accept:'image/*',    multiple:true,  color:'#fff8e1' },
-    { id:'pdf2img',   icon:'&#128247;', label:'PDF to Image',  desc:'Export PDF pages as high-quality images.',        action:'Export Images',    formats:'.pdf files',        accept:'.pdf',       multiple:false, color:'#fce4ec' }
-  ];
+var PDF_TOOLS = [
+  {id:'merge',    icon:'&#128279;', label:'Merge PDF',     desc:'Combine multiple PDFs into one document.',    action:'Merge PDFs',    fmt:'PDF files', accept:'.pdf', multi:true,  color:'#fdecea'},
+  {id:'split',    icon:'&#9986;',   label:'Split PDF',      desc:'Divide a PDF into separate pages or ranges.', action:'Split PDF',     fmt:'PDF files', accept:'.pdf', multi:false, color:'#fdf3e3', opts:['Every page','By range','Extract pages']},
+  {id:'compress', icon:'&#128230;', label:'Compress PDF',   desc:'Reduce file size while keeping quality.',     action:'Compress',      fmt:'PDF files', accept:'.pdf', multi:false, color:'#e8f4fd', opts:['Low (best quality)','Medium','High (smallest)']},
+  {id:'rotate',   icon:'&#128260;', label:'Rotate PDF',     desc:'Rotate pages 90, 180 or 270 degrees.',        action:'Rotate',        fmt:'PDF files', accept:'.pdf', multi:false, color:'#edf9f0', opts:['90 Clockwise','180','90 Counter-clockwise']},
+  {id:'protect',  icon:'&#128274;', label:'Protect PDF',    desc:'Add a password to your PDF.',                 action:'Add Password',  fmt:'PDF files', accept:'.pdf', multi:false, color:'#f3eefa'},
+  {id:'unlock',   icon:'&#128275;', label:'Unlock PDF',     desc:'Remove a password from a protected PDF.',     action:'Unlock',        fmt:'PDF files', accept:'.pdf', multi:false, color:'#fef9e7'},
+  {id:'reorder',  icon:'&#128203;', label:'Reorder Pages',  desc:'Rearrange pages in any order.',               action:'Reorder',       fmt:'PDF files', accept:'.pdf', multi:false, color:'#fdecea'},
+  {id:'sign',     icon:'&#9997;',   label:'Sign PDF',       desc:'Add your signature to a document.',           action:'Sign',          fmt:'PDF files', accept:'.pdf', multi:false, color:'#e3f2fd'}
+];
 
-  var currentTool = null;
-  var selectedFiles = [];
-  var activeChips = {};
+var CONV_TOOLS = [
+  {id:'p2w', icon:'&#128221;', label:'PDF to Word',  desc:'Convert PDF to editable .docx.',   action:'Convert', fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#e8f0fe'},
+  {id:'p2e', icon:'&#128202;', label:'PDF to Excel', desc:'Extract tables to spreadsheet.',   action:'Convert', fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#e6f4ea'},
+  {id:'p2p', icon:'&#128209;', label:'PDF to PPT',   desc:'Turn PDF into editable slides.',   action:'Convert', fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#fce8e6'},
+  {id:'w2p', icon:'&#128292;', label:'Word to PDF',  desc:'Convert .docx files to PDF.',      action:'Convert', fmt:'.doc,.docx', accept:'.doc,.docx', multi:false, color:'#e8f0fe'},
+  {id:'e2p', icon:'&#128200;', label:'Excel to PDF', desc:'Convert spreadsheets to PDF.',     action:'Convert', fmt:'.xls,.xlsx', accept:'.xls,.xlsx', multi:false, color:'#e6f4ea'},
+  {id:'s2p', icon:'&#127919;', label:'PPT to PDF',   desc:'Convert presentations to PDF.',    action:'Convert', fmt:'.ppt,.pptx', accept:'.ppt,.pptx', multi:false, color:'#fce8e6'},
+  {id:'i2p', icon:'&#128444;', label:'Image to PDF', desc:'Convert JPG or PNG into a PDF.',   action:'Convert', fmt:'Image files', accept:'image/*',    multi:true,  color:'#fff8e1'},
+  {id:'p2i', icon:'&#128247;', label:'PDF to Image', desc:'Export PDF pages as images.',      action:'Export',  fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#fce4ec'}
+];
 
-  // ── AUTH ──
-  function handleSignIn() {
-    var emailEl = document.getElementById('email-input');
-    var errEl   = document.getElementById('auth-error');
-    var email   = emailEl.value.trim().toLowerCase();
+var activeTool = null;
+var selFiles   = [];
+var selOpt     = '';
 
-    if (!email) {
-      errEl.textContent = 'Please enter your email address.';
-      return;
-    }
-    if (email.indexOf('@') === -1 || email.split('@')[1] !== DOMAIN) {
-      errEl.textContent = 'Access restricted to @' + DOMAIN + ' addresses only.';
-      return;
-    }
+/* SIGN IN */
+var signinBtn = document.getElementById('signin-btn');
+var emailInp  = document.getElementById('email-input');
+var authErr   = document.getElementById('auth-error');
 
-    errEl.textContent = '';
+signinBtn.addEventListener('click', function(){ doLogin(); });
+emailInp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ doLogin(); } });
 
-    var parts = email.split('@')[0];
-    var initials = parts.slice(0, 2).toUpperCase();
-    document.getElementById('user-initials').textContent = initials;
-    document.getElementById('user-email-display').textContent = email;
+function doLogin() {
+  var raw   = emailInp.value;
+  var email = raw.trim().toLowerCase();
+  authErr.textContent = '';
 
-    document.getElementById('auth-screen').style.display = 'none';
-    var app = document.getElementById('app-screen');
-    app.style.display = 'flex';
-    app.style.flexDirection = 'column';
-
-    renderTools();
+  if (!email) {
+    authErr.textContent = 'Please enter your email address.';
+    return;
   }
 
-  function signOut() {
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('app-screen').style.display = 'none';
-    document.getElementById('email-input').value = '';
-    selectedFiles = [];
+  var atPos = email.indexOf('@');
+  if (atPos === -1) {
+    authErr.textContent = 'Please enter a valid email address.';
+    return;
   }
 
-  document.getElementById('signin-btn').addEventListener('click', handleSignIn);
-  document.getElementById('email-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') handleSignIn();
-  });
-  document.getElementById('signout-btn').addEventListener('click', signOut);
-
-  // ── RENDER TOOLS ──
-  function renderTools() {
-    renderGrid(pdfTools, 'tools-grid');
-    renderGrid(convertTools, 'convert-grid');
+  var domain = email.substring(atPos + 1);
+  if (domain !== ALLOWED_DOMAIN) {
+    authErr.textContent = 'Access is restricted to @' + ALLOWED_DOMAIN + ' addresses only.';
+    return;
   }
 
-  function renderGrid(tools, gridId) {
-    var grid = document.getElementById(gridId);
-    grid.innerHTML = '';
-    tools.forEach(function(t) {
+  var username = email.substring(0, atPos);
+  document.getElementById('uinitials').textContent = username.substring(0, 2).toUpperCase();
+  document.getElementById('uemail').textContent = email;
+
+  document.getElementById('auth-screen').style.display = 'none';
+  var appEl = document.getElementById('app-screen');
+  appEl.style.display    = 'flex';
+  appEl.style.flexDirection = 'column';
+
+  buildGrids();
+}
+
+document.getElementById('signout-btn').addEventListener('click', function(){
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  emailInp.value = '';
+  authErr.textContent = '';
+});
+
+/* BUILD GRIDS */
+function buildGrids() {
+  buildGrid(PDF_TOOLS,  'grid1');
+  buildGrid(CONV_TOOLS, 'grid2');
+}
+
+function buildGrid(toolList, gridId) {
+  var grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  for (var i = 0; i < toolList.length; i++) {
+    (function(t){
       var card = document.createElement('div');
-      card.className = 'tool-card';
-      card.style.setProperty('--card-bg', t.color);
+      card.className = 'tcard';
       card.innerHTML =
-        '<div class="tool-icon" style="background:' + t.color + '">' + t.icon + '</div>' +
+        '<div class="tcard-icon" style="background:' + t.color + '">' + t.icon + '</div>' +
         '<h4>' + t.label + '</h4>' +
         '<p>' + t.desc + '</p>';
-      card.addEventListener('click', function() { openTool(t); });
+      card.addEventListener('click', function(){ openModal(t); });
       grid.appendChild(card);
-    });
+    })(toolList[i]);
   }
+}
 
-  // ── MODAL ──
-  function openTool(tool) {
-    currentTool = tool;
-    selectedFiles = [];
-    activeChips[tool.id] = null;
+/* MODAL */
+function openModal(t) {
+  activeTool = t;
+  selFiles   = [];
+  selOpt     = t.opts ? t.opts[0] : '';
 
-    document.getElementById('modal-icon').innerHTML = tool.icon;
-    document.getElementById('modal-title').textContent = tool.label;
-    document.getElementById('modal-sub').textContent = tool.desc;
-    document.getElementById('action-btn-label').textContent = tool.action;
-    document.getElementById('formats-hint').textContent = tool.formats;
+  document.getElementById('m-icon').innerHTML  = t.icon;
+  document.getElementById('m-title').textContent = t.label;
+  document.getElementById('m-desc').textContent  = t.desc;
+  document.getElementById('run-label').textContent = t.action;
+  document.getElementById('dz-fmt').textContent  = t.fmt;
+  document.getElementById('file-list').innerHTML = '';
+  document.getElementById('result').className    = 'result';
+  document.getElementById('result').textContent  = '';
+  document.getElementById('prog-wrap').classList.remove('show');
+  document.getElementById('prog-bar').style.width = '0%';
 
-    var fi = document.getElementById('file-input');
-    fi.accept = tool.accept;
-    fi.multiple = !!tool.multiple;
-    fi.value = '';
+  var fi = document.getElementById('file-input');
+  fi.accept   = t.accept;
+  fi.multiple = !!t.multi;
+  fi.value    = '';
 
-    document.getElementById('file-list').innerHTML = '';
-    document.getElementById('result-msg').className = 'result-msg';
-    document.getElementById('result-msg').textContent = '';
-    document.getElementById('progress-wrap').classList.remove('show');
-    document.getElementById('progress-bar').style.width = '0%';
+  var optsEl = document.getElementById('m-opts');
+  optsEl.innerHTML = '';
+  if (t.opts && t.opts.length) {
+    var lb  = document.createElement('div');
+    lb.className   = 'opt-label';
+    lb.textContent = 'Options';
+    optsEl.appendChild(lb);
 
-    var optEl = document.getElementById('modal-options');
-    optEl.innerHTML = '';
-    if (tool.options) {
-      var lbl = document.createElement('div');
-      lbl.className = 'option-label';
-      lbl.textContent = tool.options.label;
-      optEl.appendChild(lbl);
-      var row = document.createElement('div');
-      row.className = 'options-row';
-      tool.options.chips.forEach(function(c, i) {
+    var row = document.createElement('div');
+    row.className = 'opt-row';
+
+    for (var j = 0; j < t.opts.length; j++) {
+      (function(optText, idx){
         var chip = document.createElement('div');
-        chip.className = 'option-chip' + (i === 0 ? ' active' : '');
-        chip.textContent = c;
-        if (i === 0) activeChips[tool.id] = c;
-        chip.addEventListener('click', function() {
-          row.querySelectorAll('.option-chip').forEach(function(el) { el.classList.remove('active'); });
+        chip.className   = 'chip' + (idx === 0 ? ' active' : '');
+        chip.textContent = optText;
+        chip.addEventListener('click', function(){
+          var chips = row.querySelectorAll('.chip');
+          for (var k = 0; k < chips.length; k++) chips[k].classList.remove('active');
           chip.classList.add('active');
-          activeChips[tool.id] = c;
+          selOpt = optText;
         });
         row.appendChild(chip);
-      });
-      optEl.appendChild(row);
+      })(t.opts[j], j);
     }
-
-    document.getElementById('modal-overlay').classList.add('open');
+    optsEl.appendChild(row);
   }
 
-  function closeModal() {
-    document.getElementById('modal-overlay').classList.remove('open');
-    currentTool = null;
-    selectedFiles = [];
+  document.getElementById('overlay').classList.add('open');
+}
+
+document.getElementById('modal-close').addEventListener('click', function(){
+  document.getElementById('overlay').classList.remove('open');
+});
+document.getElementById('overlay').addEventListener('click', function(e){
+  if (e.target === document.getElementById('overlay')){
+    document.getElementById('overlay').classList.remove('open');
   }
+});
 
-  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
-  document.getElementById('modal-overlay').addEventListener('click', function(e) {
-    if (e.target === document.getElementById('modal-overlay')) closeModal();
-  });
+/* FILES */
+document.getElementById('file-input').addEventListener('change', function(){
+  var picked = Array.from(this.files);
+  if (activeTool && activeTool.multi) {
+    selFiles = selFiles.concat(picked);
+  } else {
+    selFiles = picked.length ? [picked[0]] : [];
+  }
+  renderFileList();
+});
 
-  // ── FILES ──
-  document.getElementById('file-input').addEventListener('change', function(e) {
-    var files = Array.from(e.target.files);
-    if (currentTool && !currentTool.multiple) selectedFiles = [files[0]];
-    else selectedFiles = selectedFiles.concat(files);
-    renderFileList();
-  });
+var dz = document.getElementById('dropzone');
+dz.addEventListener('dragover',  function(e){ e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', function(){  dz.classList.remove('over'); });
+dz.addEventListener('drop', function(e){
+  e.preventDefault();
+  dz.classList.remove('over');
+  var dropped = Array.from(e.dataTransfer.files);
+  if (activeTool && activeTool.multi) {
+    selFiles = selFiles.concat(dropped);
+  } else {
+    selFiles = dropped.length ? [dropped[0]] : [];
+  }
+  renderFileList();
+});
 
-  function renderFileList() {
-    var list = document.getElementById('file-list');
-    list.innerHTML = '';
-    selectedFiles.forEach(function(f, i) {
+function renderFileList() {
+  var list = document.getElementById('file-list');
+  list.innerHTML = '';
+  for (var i = 0; i < selFiles.length; i++) {
+    (function(f, idx){
       var item = document.createElement('div');
-      item.className = 'file-item';
+      item.className = 'fitem';
       item.innerHTML =
-        '<span class="fi-icon">&#128196;</span>' +
-        '<span class="fi-name">' + f.name + '</span>' +
-        '<span class="fi-size">' + formatSize(f.size) + '</span>' +
-        '<button class="fi-remove" data-idx="' + i + '">&#10005;</button>';
+        '<span>&#128196;</span>' +
+        '<span class="fname">' + f.name + '</span>' +
+        '<span class="fsize">' + fmtSize(f.size) + '</span>' +
+        '<button class="fremove" data-idx="' + idx + '">&#10005;</button>';
       list.appendChild(item);
-    });
-    list.querySelectorAll('.fi-remove').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        selectedFiles.splice(parseInt(btn.getAttribute('data-idx')), 1);
-        renderFileList();
-      });
+    })(selFiles[i], i);
+  }
+  var removeButtons = list.querySelectorAll('.fremove');
+  for (var r = 0; r < removeButtons.length; r++) {
+    removeButtons[r].addEventListener('click', function(){
+      var idx = parseInt(this.getAttribute('data-idx'));
+      selFiles.splice(idx, 1);
+      renderFileList();
     });
   }
+}
 
-  document.getElementById('clear-btn').addEventListener('click', function() {
-    selectedFiles = [];
-    document.getElementById('file-list').innerHTML = '';
-    document.getElementById('file-input').value = '';
-    document.getElementById('result-msg').className = 'result-msg';
-    document.getElementById('result-msg').textContent = '';
-    document.getElementById('progress-wrap').classList.remove('show');
-    document.getElementById('progress-bar').style.width = '0%';
-  });
+function fmtSize(bytes) {
+  if (bytes < 1024)    return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(2) + ' MB';
+}
 
-  function formatSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / 1048576).toFixed(2) + ' MB';
+document.getElementById('clear-btn').addEventListener('click', function(){
+  selFiles = [];
+  document.getElementById('file-list').innerHTML = '';
+  document.getElementById('file-input').value = '';
+  document.getElementById('result').className = 'result';
+  document.getElementById('result').textContent = '';
+  document.getElementById('prog-wrap').classList.remove('show');
+  document.getElementById('prog-bar').style.width = '0%';
+});
+
+/* RUN */
+document.getElementById('run-btn').addEventListener('click', function(){
+  if (!selFiles.length) {
+    showResult('err', 'Please select at least one file first.');
+    return;
   }
+  document.getElementById('result').className = 'result';
+  document.getElementById('prog-wrap').classList.add('show');
+  document.getElementById('prog-bar').style.width = '0%';
 
-  // ── RUN TOOL ──
-  document.getElementById('run-btn').addEventListener('click', function() {
-    if (selectedFiles.length === 0) {
-      showResult('error', 'Please select at least one file first.');
-      return;
+  var pct = 0;
+  var iv = setInterval(function(){
+    pct += Math.random() * 18 + 6;
+    if (pct >= 100) {
+      pct = 100;
+      clearInterval(iv);
+      var names  = selFiles.map(function(f){ return f.name; }).join(', ');
+      var optStr = selOpt ? ' (' + selOpt + ')' : '';
+      showResult('ok',
+        'Done! ' + activeTool.action + optStr + ' applied to: ' + names + '\n\n' +
+        'Note: To enable real file processing, connect this interface to a PDF backend such as the ILovePDF API or pdf-lib.js.'
+      );
     }
-    var wrap = document.getElementById('progress-wrap');
-    var bar  = document.getElementById('progress-bar');
-    document.getElementById('result-msg').className = 'result-msg';
-    wrap.classList.add('show');
-    bar.style.width = '0%';
+    document.getElementById('prog-bar').style.width = pct + '%';
+  }, 160);
+});
 
-    var p = 0;
-    var iv = setInterval(function() {
-      p += Math.random() * 18 + 5;
-      if (p >= 100) {
-        p = 100;
-        clearInterval(iv);
-        var tool = currentTool;
-        var names = selectedFiles.map(function(f) { return f.name; }).join(', ');
-        var opt = activeChips[tool.id] ? ' (' + activeChips[tool.id] + ')' : '';
-        showResult('success',
-          'Done! ' + tool.action + opt + ' applied to: ' + names + '\n\n' +
-          'Note: In a live deployment, connect this UI to a PDF backend (PDF-lib, ILovePDF API, LibreOffice, etc.) to enable actual file processing and download.');
-      }
-      bar.style.width = p + '%';
-    }, 180);
-  });
-
-  function showResult(type, text) {
-    var msg = document.getElementById('result-msg');
-    msg.className = 'result-msg ' + type;
-    msg.textContent = text;
-  }
-
-  // ── DRAG & DROP ──
-  var dz = document.getElementById('dropzone');
-  dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('active'); });
-  dz.addEventListener('dragleave', function() { dz.classList.remove('active'); });
-  dz.addEventListener('drop', function(e) {
-    e.preventDefault();
-    dz.classList.remove('active');
-    if (!currentTool) return;
-    var files = Array.from(e.dataTransfer.files);
-    if (!currentTool.multiple) selectedFiles = [files[0]];
-    else selectedFiles = selectedFiles.concat(files);
-    renderFileList();
-  });
+function showResult(cls, msg) {
+  var r = document.getElementById('result');
+  r.className   = 'result ' + cls;
+  r.textContent = msg;
+}
 
 })();
 </script>
