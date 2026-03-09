@@ -1,0 +1,12 @@
+{
+  "name": "officepdf",
+  "version": "1.0.0",
+  "description": "Internal PDF toolkit for Dewan Architects",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
