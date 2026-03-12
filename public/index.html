@@ -450,7 +450,7 @@ document.getElementById('run-btn').addEventListener('click',function(){
       document.getElementById('prog-wrap').classList.remove('show');
       document.getElementById('status-row').style.display='none';
       document.getElementById('run-btn').disabled=false;
-      showResult('err','&#9888; Error: '+err.message+'\n\nCheck that Stirling-PDF is running and STIRLING_URL is set correctly in Railway.');
+      showResult('err','&#9888; Error: '+err.message);
     });
 });
 
