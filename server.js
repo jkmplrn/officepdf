@@ -22,41 +22,49 @@ function pipeStirrling(stirlingRes, res, filename) {
   stirlingRes.body.pipe(res);
 }
 
-// ── 1. COMPRESS PDF ───────────────────────────────────────────────
+// ── 1. COMPRESS PDF (using qpdf directly — free, no Stirling license needed)
 app.post('/api/compress', upload.single('file'), async (req, res) => {
+  const { execFile } = require('child_process');
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+
   try {
-    const levelMap = { low: '2', medium: '3', high: '4' };
-    const optimizeLevel = levelMap[req.body.level] || '2';
+    const levelMap = { low: '3', medium: '2', high: '1' };
+    const compressionLevel = levelMap[req.body.level] || '2';
 
-    const form = new FormData();
-    form.append('fileInput', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: 'application/pdf'
+    // Write input file to temp
+    const tmpDir  = os.tmpdir();
+    const inFile  = path.join(tmpDir, 'input_' + Date.now() + '.pdf');
+    const outFile = path.join(tmpDir, 'output_' + Date.now() + '.pdf');
+    fs.writeFileSync(inFile, req.file.buffer);
+
+    // Run qpdf to compress/linearize the PDF
+    execFile('qpdf', [
+      '--linearize',
+      '--compress-streams=y',
+      '--recompress-flate',
+      '--compression-level=' + compressionLevel,
+      '--object-streams=generate',
+      inFile,
+      outFile
+    ], (err, stdout, stderr) => {
+      // Clean up input
+      try { fs.unlinkSync(inFile); } catch(e) {}
+
+      if (err) {
+        try { fs.unlinkSync(outFile); } catch(e) {}
+        console.error('qpdf error:', stderr);
+        return res.status(500).json({ error: 'Compression failed: ' + stderr });
+      }
+
+      const result = fs.readFileSync(outFile);
+      try { fs.unlinkSync(outFile); } catch(e) {}
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="compressed.pdf"');
+      res.send(result);
     });
-    form.append('optimizeLevel', optimizeLevel);
-    form.append('expectedOutputSizeInMB', '-1');
-
-    const r = await fetch(`${STIRLING}/api/v1/general/compress-pdf`, {
-      method: 'POST', body: form, headers: form.getHeaders()
-    });
-
-    if (r.ok) return pipeStirrling(r, res, 'compressed.pdf');
-
-    // Fallback: use qpdf-based repair which also reduces size
-    console.warn('compress-pdf failed with status', r.status, '- trying repair fallback');
-    const form2 = new FormData();
-    form2.append('fileInput', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: 'application/pdf'
-    });
-    const r2 = await fetch(`${STIRLING}/api/v1/general/repair`, {
-      method: 'POST', body: form2, headers: form2.getHeaders()
-    });
-
-    if (r2.ok) return pipeStirrling(r2, res, 'compressed.pdf');
-
-    const txt = await r2.text();
-    res.status(500).json({ error: 'Stirling error: ' + txt });
 
   } catch (err) {
     console.error('compress error:', err);
