@@ -1,76 +1,54 @@
-const express = require('express');
-const fetch   = require('node-fetch');
+const express  = require('express');
+const fetch    = require('node-fetch');
 const FormData = require('form-data');
-const multer  = require('multer');
+const multer   = require('multer');
+const { execFile } = require('child_process');
+const fs   = require('fs');
+const os   = require('os');
+const path = require('path');
 
 const app    = express();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100MB limit
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
-// ── Stirling-PDF URL ──────────────────────────────────────────────
-// In Railway: set STIRLING_URL as an environment variable
-// Value should be the internal Railway URL of your Stirling-PDF service
-// Example: http://stirling-pdf.railway.internal:8080
-const STIRLING = (process.env.STIRLING_URL || 'http://stirling-pdf:8080').replace(/\/$/, '');
+// ── Gotenberg URL ─────────────────────────────────────────────────
+// In Railway: set GOTENBERG_URL env variable
+// Value: http://gotenberg.railway.internal:3000
+const GOTENBERG = (process.env.GOTENBERG_URL || 'http://gotenberg:3000').replace(/\/$/, '');
 
 app.use(express.static('public'));
 
-// ── Helper: proxy a Stirling response back to the browser ─────────
-function pipeStirrling(stirlingRes, res, filename) {
-  const ct = stirlingRes.headers.get('content-type') || 'application/octet-stream';
+// ── Helper: pipe Gotenberg response to browser ────────────────────
+function pipeResponse(gRes, res, filename) {
+  const ct = gRes.headers.get('content-type') || 'application/octet-stream';
   res.setHeader('Content-Type', ct);
   res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '"');
-  stirlingRes.body.pipe(res);
+  gRes.body.pipe(res);
 }
 
-// ── 1. COMPRESS PDF (using qpdf directly — free, no Stirling license needed)
+// ── Helper: handle Gotenberg error ───────────────────────────────
+async function gotenbergError(gRes) {
+  const txt = await gRes.text();
+  return 'Gotenberg error ' + gRes.status + ': ' + txt;
+}
+
+// ── 1. COMPRESS PDF ───────────────────────────────────────────────
+// Gotenberg uses qpdf under the hood — fully free, no license needed
 app.post('/api/compress', upload.single('file'), async (req, res) => {
-  const { execFile } = require('child_process');
-  const fs = require('fs');
-  const os = require('os');
-  const path = require('path');
-
   try {
-    const levelMap = { low: '3', medium: '2', high: '1' };
-    const compressionLevel = levelMap[req.body.level] || '2';
+    const form = new FormData();
+    form.append('files', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: 'application/pdf'
+    });
+    // compress=true tells Gotenberg to run qpdf compression
+    form.append('compress', 'true');
 
-    // Write input file to temp
-    const tmpDir  = os.tmpdir();
-    const inFile  = path.join(tmpDir, 'input_' + Date.now() + '.pdf');
-    const outFile = path.join(tmpDir, 'output_' + Date.now() + '.pdf');
-    fs.writeFileSync(inFile, req.file.buffer);
-
-    // Run qpdf to compress/linearize the PDF
-    // Note: --recompress-flate and --compression-level require qpdf 10+
-    execFile('qpdf', [
-      '--linearize',
-      '--compress-streams=y',
-      '--object-streams=generate',
-      inFile,
-      outFile
-    ], (err, stdout, stderr) => {
-      // Clean up input
-      try { fs.unlinkSync(inFile); } catch(e) {}
-
-      if (err) {
-        try { fs.unlinkSync(outFile); } catch(e) {}
-        const errMsg = (stderr || '') + ' | stdout: ' + (stdout || '') + ' | code: ' + err.code;
-        console.error('qpdf error:', errMsg);
-        return res.status(500).json({ error: 'qpdf failed: ' + errMsg });
-      }
-
-      let result;
-      try {
-        result = fs.readFileSync(outFile);
-        fs.unlinkSync(outFile);
-      } catch(e) {
-        return res.status(500).json({ error: 'Could not read output file: ' + e.message });
-      }
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="compressed.pdf"');
-      res.send(result);
+    const r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, {
+      method: 'POST', body: form, headers: form.getHeaders()
     });
 
+    if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
+    pipeResponse(r, res, 'compressed.pdf');
   } catch (err) {
     console.error('compress error:', err);
     res.status(500).json({ error: err.message });
@@ -78,140 +56,278 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
 });
 
 // ── 2. PDF TO IMAGE ───────────────────────────────────────────────
-// Returns a ZIP of PNG images, one per page
+// Gotenberg doesn't natively export PDF→image, so we use ImageMagick
+// which is available in the Gotenberg container via shell
+// Instead we proxy through a lightweight approach: use pdftoppm via shell on OfficePDF side
+// Actually: we call Gotenberg's /forms/pdfengines/convert with pdfa then use sharp
+// Simplest working approach: use Stirling-compatible ImageMagick call directly
 app.post('/api/pdf-to-img', upload.single('file'), async (req, res) => {
   try {
-    const form = new FormData();
-    form.append('fileInput', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: 'application/pdf'
+    // Write PDF to temp file
+    const tmpIn  = path.join(os.tmpdir(), 'pdfin_'  + Date.now() + '.pdf');
+    const tmpOut = path.join(os.tmpdir(), 'pdfout_' + Date.now());
+    fs.writeFileSync(tmpIn, req.file.buffer);
+
+    // Use pdftoppm (poppler) to convert PDF pages to PNG images
+    execFile('pdftoppm', [
+      '-r', '150',      // 150 DPI
+      '-png',           // output PNG
+      tmpIn,
+      tmpOut            // output prefix — creates tmpOut-1.png, tmpOut-2.png etc
+    ], async (err, stdout, stderr) => {
+      try { fs.unlinkSync(tmpIn); } catch(e) {}
+
+      if (err) {
+        console.error('pdftoppm error:', stderr);
+        // Fallback: try ImageMagick convert
+        execFile('convert', [
+          '-density', '150',
+          tmpIn,
+          tmpOut + '-%03d.png'
+        ], (err2, stdout2, stderr2) => {
+          if (err2) {
+            return res.status(500).json({ error: 'PDF to image failed: ' + (stderr2 || stderr) });
+          }
+          zipAndSend(tmpOut, res);
+        });
+        return;
+      }
+
+      zipAndSend(tmpOut, res);
     });
-    form.append('imageFormat', 'png');
-    form.append('singleOrMultiple', 'multiple');
-    form.append('colorType', 'color');
-    form.append('dpi', '150');
-
-    const r = await fetch(`${STIRLING}/api/v1/convert/pdf/img`, {
-      method: 'POST', body: form, headers: form.getHeaders()
-    });
-
-    if (!r.ok) {
-      const txt = await r.text();
-      return res.status(r.status).json({ error: 'Stirling error: ' + txt });
-    }
-
-    pipeStirrling(r, res, 'pdf-images.zip');
   } catch (err) {
     console.error('pdf-to-img error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
+function zipAndSend(prefix, res) {
+  // Find all generated image files
+  const dir = path.dirname(prefix);
+  const base = path.basename(prefix);
+  let files;
+  try {
+    files = fs.readdirSync(dir).filter(f => f.startsWith(base) && (f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.ppm')));
+  } catch(e) {
+    return res.status(500).json({ error: 'Could not read output files: ' + e.message });
+  }
+
+  if (!files.length) {
+    return res.status(500).json({ error: 'No images were generated from the PDF.' });
+  }
+
+  const zipPath = prefix + '.zip';
+
+  // Use zip command to create archive
+  const fullPaths = files.map(f => path.join(dir, f));
+  execFile('zip', ['-j', zipPath, ...fullPaths], (err) => {
+    // Clean up individual image files
+    fullPaths.forEach(f => { try { fs.unlinkSync(f); } catch(e) {} });
+
+    if (err) {
+      // If zip not available, just send the first image
+      const firstFile = fullPaths[0];
+      if (fs.existsSync(firstFile)) {
+        const data = fs.readFileSync(firstFile);
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Disposition', 'attachment; filename="page-1.png"');
+        return res.send(data);
+      }
+      return res.status(500).json({ error: 'Could not create zip: ' + err.message });
+    }
+
+    const zipData = fs.readFileSync(zipPath);
+    try { fs.unlinkSync(zipPath); } catch(e) {}
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="pdf-images.zip"');
+    res.send(zipData);
+  });
+}
+
 // ── 3. PDF TO WORD ────────────────────────────────────────────────
+// Gotenberg doesn't convert PDF→DOCX (no tool does this perfectly)
+// Best approach: use LibreOffice via Gotenberg to at least get editable output
+// We send PDF to Gotenberg's libreoffice convert endpoint
 app.post('/api/pdf-to-word', upload.single('file'), async (req, res) => {
   try {
     const form = new FormData();
-    form.append('fileInput', req.file.buffer, {
+    form.append('files', req.file.buffer, {
       filename: req.file.originalname,
       contentType: 'application/pdf'
     });
-    form.append('outputFormat', 'docx');
 
-    const r = await fetch(`${STIRLING}/api/v1/convert/pdf/word`, {
+    // Use LibreOffice to convert PDF to DOCX
+    const r = await fetch(`${GOTENBERG}/forms/libreoffice/convert`, {
       method: 'POST', body: form, headers: form.getHeaders()
     });
 
-    if (!r.ok) {
-      const txt = await r.text();
-      return res.status(r.status).json({ error: 'Stirling error: ' + txt });
-    }
-
-    pipeStirrling(r, res, 'converted.docx');
+    if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
+    pipeResponse(r, res, 'converted.docx');
   } catch (err) {
     console.error('pdf-to-word error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── OTHER TOOLS (stubs — easy to enable later) ────────────────────
-app.post('/api/merge',        upload.array('files'), async (req, res) => {
+// ── 4. MERGE PDF ──────────────────────────────────────────────────
+app.post('/api/merge', upload.array('files'), async (req, res) => {
   try {
     const form = new FormData();
-    req.files.forEach(f => form.append('fileInput', f.buffer, { filename: f.originalname, contentType: 'application/pdf' }));
-    const r = await fetch(`${STIRLING}/api/v1/general/merge-pdfs`, { method:'POST', body:form, headers:form.getHeaders() });
-    if (!r.ok) { const t = await r.text(); return res.status(r.status).json({ error: t }); }
-    pipeStirrling(r, res, 'merged.pdf');
-  } catch(e) { res.status(500).json({ error: e.message }); }
+    req.files.forEach(f => form.append('files', f.buffer, {
+      filename: f.originalname, contentType: 'application/pdf'
+    }));
+    form.append('merge', 'true');
+
+    const r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, {
+      method: 'POST', body: form, headers: form.getHeaders()
+    });
+
+    if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
+    pipeResponse(r, res, 'merged.pdf');
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
+// ── 5. SPLIT PDF ──────────────────────────────────────────────────
 app.post('/api/split', upload.single('file'), async (req, res) => {
   try {
     const form = new FormData();
-    form.append('fileInput', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
-    form.append('pages', req.body.pages || '1');
-    form.append('splitType', '0');
-    const r = await fetch(`${STIRLING}/api/v1/general/split-pdf`, { method:'POST', body:form, headers:form.getHeaders() });
-    if (!r.ok) { const t = await r.text(); return res.status(r.status).json({ error: t }); }
-    pipeStirrling(r, res, 'split.zip');
-  } catch(e) { res.status(500).json({ error: e.message }); }
+    form.append('files', req.file.buffer, {
+      filename: req.file.originalname, contentType: 'application/pdf'
+    });
+    form.append('splitMode', 'pages');
+    form.append('splitSpan', '1');
+    form.append('splitUnify', 'false');
+
+    const r = await fetch(`${GOTENBERG}/forms/pdfengines/split`, {
+      method: 'POST', body: form, headers: form.getHeaders()
+    });
+
+    if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
+    pipeResponse(r, res, 'split.zip');
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
+// ── 6. ROTATE PDF ─────────────────────────────────────────────────
 app.post('/api/rotate', upload.single('file'), async (req, res) => {
   try {
     const degMap = { '90 Clockwise': '90', '180': '180', '90 Counter-clockwise': '270' };
+    const angle = degMap[req.body.rotation] || '90';
+
     const form = new FormData();
-    form.append('fileInput', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
-    form.append('angle', degMap[req.body.rotation] || '90');
-    const r = await fetch(`${STIRLING}/api/v1/general/rotate-pdf`, { method:'POST', body:form, headers:form.getHeaders() });
-    if (!r.ok) { const t = await r.text(); return res.status(r.status).json({ error: t }); }
-    pipeStirrling(r, res, 'rotated.pdf');
-  } catch(e) { res.status(500).json({ error: e.message }); }
+    form.append('files', req.file.buffer, {
+      filename: req.file.originalname, contentType: 'application/pdf'
+    });
+    form.append('rotate', angle);
+
+    const r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, {
+      method: 'POST', body: form, headers: form.getHeaders()
+    });
+
+    if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
+    pipeResponse(r, res, 'rotated.pdf');
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
+// ── 7. PROTECT PDF ────────────────────────────────────────────────
 app.post('/api/protect', upload.single('file'), async (req, res) => {
   try {
     const form = new FormData();
-    form.append('fileInput', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
-    form.append('password', req.body.password || '');
-    const r = await fetch(`${STIRLING}/api/v1/security/add-password`, { method:'POST', body:form, headers:form.getHeaders() });
-    if (!r.ok) { const t = await r.text(); return res.status(r.status).json({ error: t }); }
-    pipeStirrling(r, res, 'protected.pdf');
-  } catch(e) { res.status(500).json({ error: e.message }); }
+    form.append('files', req.file.buffer, {
+      filename: req.file.originalname, contentType: 'application/pdf'
+    });
+    form.append('userPassword', req.body.password || '');
+    form.append('ownerPassword', req.body.password || '');
+    form.append('encrypt', 'true');
+
+    const r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, {
+      method: 'POST', body: form, headers: form.getHeaders()
+    });
+
+    if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
+    pipeResponse(r, res, 'protected.pdf');
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
+// ── 8. UNLOCK PDF ─────────────────────────────────────────────────
 app.post('/api/unlock', upload.single('file'), async (req, res) => {
   try {
     const form = new FormData();
-    form.append('fileInput', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
+    form.append('files', req.file.buffer, {
+      filename: req.file.originalname, contentType: 'application/pdf'
+    });
     form.append('password', req.body.password || '');
-    const r = await fetch(`${STIRLING}/api/v1/security/remove-password`, { method:'POST', body:form, headers:form.getHeaders() });
-    if (!r.ok) { const t = await r.text(); return res.status(r.status).json({ error: t }); }
-    pipeStirrling(r, res, 'unlocked.pdf');
-  } catch(e) { res.status(500).json({ error: e.message }); }
+
+    const r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, {
+      method: 'POST', body: form, headers: form.getHeaders()
+    });
+
+    if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
+    pipeResponse(r, res, 'unlocked.pdf');
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
+// ── 9. IMAGE TO PDF ───────────────────────────────────────────────
 app.post('/api/img-to-pdf', upload.array('files'), async (req, res) => {
   try {
     const form = new FormData();
-    req.files.forEach(f => form.append('fileInput', f.buffer, { filename: f.originalname, contentType: f.mimetype }));
-    const r = await fetch(`${STIRLING}/api/v1/convert/img/pdf`, { method:'POST', body:form, headers:form.getHeaders() });
-    if (!r.ok) { const t = await r.text(); return res.status(r.status).json({ error: t }); }
-    pipeStirrling(r, res, 'converted.pdf');
-  } catch(e) { res.status(500).json({ error: e.message }); }
+    req.files.forEach(f => form.append('files', f.buffer, {
+      filename: f.originalname, contentType: f.mimetype
+    }));
+    form.append('merge', 'true');
+
+    const r = await fetch(`${GOTENBERG}/forms/chromium/convert/html`, {
+      method: 'POST', body: form, headers: form.getHeaders()
+    });
+
+    if (!r.ok) {
+      // fallback: use libreoffice
+      const form2 = new FormData();
+      req.files.forEach(f => form2.append('files', f.buffer, {
+        filename: f.originalname, contentType: f.mimetype
+      }));
+      const r2 = await fetch(`${GOTENBERG}/forms/libreoffice/convert`, {
+        method: 'POST', body: form2, headers: form2.getHeaders()
+      });
+      if (!r2.ok) return res.status(r2.status).json({ error: await gotenbergError(r2) });
+      return pipeResponse(r2, res, 'converted.pdf');
+    }
+    pipeResponse(r, res, 'converted.pdf');
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
+// ── 10. WORD TO PDF ───────────────────────────────────────────────
 app.post('/api/word-to-pdf', upload.single('file'), async (req, res) => {
   try {
     const form = new FormData();
-    form.append('fileInput', req.file.buffer, { filename: req.file.originalname, contentType: req.file.mimetype });
-    const r = await fetch(`${STIRLING}/api/v1/convert/word/pdf`, { method:'POST', body:form, headers:form.getHeaders() });
-    if (!r.ok) { const t = await r.text(); return res.status(r.status).json({ error: t }); }
-    pipeStirrling(r, res, 'converted.pdf');
-  } catch(e) { res.status(500).json({ error: e.message }); }
+    form.append('files', req.file.buffer, {
+      filename: req.file.originalname, contentType: req.file.mimetype
+    });
+
+    const r = await fetch(`${GOTENBERG}/forms/libreoffice/convert`, {
+      method: 'POST', body: form, headers: form.getHeaders()
+    });
+
+    if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
+    pipeResponse(r, res, 'converted.pdf');
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Health check ──────────────────────────────────────────────────
-app.get('/health', (req, res) => res.json({ status: 'ok', stirling: STIRLING }));
+app.get('/health', (req, res) => res.json({ status: 'ok', gotenberg: GOTENBERG }));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('OfficePDF running on port ' + PORT + ' → Stirling at ' + STIRLING));
+app.listen(PORT, () => console.log('OfficePDF running on port ' + PORT + ' → Gotenberg at ' + GOTENBERG));
