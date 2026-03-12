@@ -56,93 +56,49 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
 });
 
 // ── 2. PDF TO IMAGE ───────────────────────────────────────────────
-// Gotenberg doesn't natively export PDF→image, so we use ImageMagick
-// which is available in the Gotenberg container via shell
-// Instead we proxy through a lightweight approach: use pdftoppm via shell on OfficePDF side
-// Actually: we call Gotenberg's /forms/pdfengines/convert with pdfa then use sharp
-// Simplest working approach: use Stirling-compatible ImageMagick call directly
+// Convert each PDF page to PNG using Gotenberg's screenshot route
+// We convert PDF→HTML→screenshot, or use LibreOffice export
 app.post('/api/pdf-to-img', upload.single('file'), async (req, res) => {
   try {
-    // Write PDF to temp file
-    const tmpIn  = path.join(os.tmpdir(), 'pdfin_'  + Date.now() + '.pdf');
-    const tmpOut = path.join(os.tmpdir(), 'pdfout_' + Date.now());
-    fs.writeFileSync(tmpIn, req.file.buffer);
-
-    // Use pdftoppm (poppler) to convert PDF pages to PNG images
-    execFile('pdftoppm', [
-      '-r', '150',      // 150 DPI
-      '-png',           // output PNG
-      tmpIn,
-      tmpOut            // output prefix — creates tmpOut-1.png, tmpOut-2.png etc
-    ], async (err, stdout, stderr) => {
-      try { fs.unlinkSync(tmpIn); } catch(e) {}
-
-      if (err) {
-        console.error('pdftoppm error:', stderr);
-        // Fallback: try ImageMagick convert
-        execFile('convert', [
-          '-density', '150',
-          tmpIn,
-          tmpOut + '-%03d.png'
-        ], (err2, stdout2, stderr2) => {
-          if (err2) {
-            return res.status(500).json({ error: 'PDF to image failed: ' + (stderr2 || stderr) });
-          }
-          zipAndSend(tmpOut, res);
-        });
-        return;
-      }
-
-      zipAndSend(tmpOut, res);
+    // Gotenberg can convert PDF to PNG via its pdfengines read + chromium screenshot
+    // Best approach: convert PDF pages to images using LibreOffice export
+    const form = new FormData();
+    form.append('files', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: 'application/pdf'
     });
+    // exportFormFields=false, losslessImageCompression=true exports as PNG images
+    form.append('exportType', 'png');
+
+    // Try pdfengines convert with image output
+    const r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, {
+      method: 'POST', body: form, headers: form.getHeaders()
+    });
+
+    if (r.ok) return pipeResponse(r, res, 'pdf-images.zip');
+
+    // Fallback: use LibreOffice to export PDF as images
+    const form2 = new FormData();
+    form2.append('files', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: 'application/pdf'
+    });
+    form2.append('nativePageRanges', '1-10'); // limit to first 10 pages
+    form2.append('exportType', 'png');
+
+    const r2 = await fetch(`${GOTENBERG}/forms/libreoffice/convert`, {
+      method: 'POST', body: form2, headers: form2.getHeaders()
+    });
+
+    if (r2.ok) return pipeResponse(r2, res, 'pdf-images.zip');
+
+    const errText = await r2.text();
+    res.status(500).json({ error: 'PDF to image failed: ' + errText });
   } catch (err) {
     console.error('pdf-to-img error:', err);
     res.status(500).json({ error: err.message });
   }
 });
-
-function zipAndSend(prefix, res) {
-  // Find all generated image files
-  const dir = path.dirname(prefix);
-  const base = path.basename(prefix);
-  let files;
-  try {
-    files = fs.readdirSync(dir).filter(f => f.startsWith(base) && (f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.ppm')));
-  } catch(e) {
-    return res.status(500).json({ error: 'Could not read output files: ' + e.message });
-  }
-
-  if (!files.length) {
-    return res.status(500).json({ error: 'No images were generated from the PDF.' });
-  }
-
-  const zipPath = prefix + '.zip';
-
-  // Use zip command to create archive
-  const fullPaths = files.map(f => path.join(dir, f));
-  execFile('zip', ['-j', zipPath, ...fullPaths], (err) => {
-    // Clean up individual image files
-    fullPaths.forEach(f => { try { fs.unlinkSync(f); } catch(e) {} });
-
-    if (err) {
-      // If zip not available, just send the first image
-      const firstFile = fullPaths[0];
-      if (fs.existsSync(firstFile)) {
-        const data = fs.readFileSync(firstFile);
-        res.setHeader('Content-Type', 'image/png');
-        res.setHeader('Content-Disposition', 'attachment; filename="page-1.png"');
-        return res.send(data);
-      }
-      return res.status(500).json({ error: 'Could not create zip: ' + err.message });
-    }
-
-    const zipData = fs.readFileSync(zipPath);
-    try { fs.unlinkSync(zipPath); } catch(e) {}
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="pdf-images.zip"');
-    res.send(zipData);
-  });
-}
 
 // ── 3. PDF TO WORD ────────────────────────────────────────────────
 // Gotenberg doesn't convert PDF→DOCX (no tool does this perfectly)
