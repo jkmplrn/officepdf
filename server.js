@@ -40,11 +40,10 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
     fs.writeFileSync(inFile, req.file.buffer);
 
     // Run qpdf to compress/linearize the PDF
+    // Note: --recompress-flate and --compression-level require qpdf 10+
     execFile('qpdf', [
       '--linearize',
       '--compress-streams=y',
-      '--recompress-flate',
-      '--compression-level=' + compressionLevel,
       '--object-streams=generate',
       inFile,
       outFile
@@ -54,12 +53,18 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
 
       if (err) {
         try { fs.unlinkSync(outFile); } catch(e) {}
-        console.error('qpdf error:', stderr);
-        return res.status(500).json({ error: 'Compression failed: ' + stderr });
+        const errMsg = (stderr || '') + ' | stdout: ' + (stdout || '') + ' | code: ' + err.code;
+        console.error('qpdf error:', errMsg);
+        return res.status(500).json({ error: 'qpdf failed: ' + errMsg });
       }
 
-      const result = fs.readFileSync(outFile);
-      try { fs.unlinkSync(outFile); } catch(e) {}
+      let result;
+      try {
+        result = fs.readFileSync(outFile);
+        fs.unlinkSync(outFile);
+      } catch(e) {
+        return res.status(500).json({ error: 'Could not read output file: ' + e.message });
+      }
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename="compressed.pdf"');
