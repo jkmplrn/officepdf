@@ -7,117 +7,123 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <style>
 :root {
-  --red: #E8372B; --red-dark: #c22d22; --red-light: #fdf1f0;
-  --charcoal: #1a1a1a; --mid: #5a5a5a; --light: #f5f4f2;
-  --white: #fff; --border: #e0ddd8; --radius: 14px;
-  --fh: 'DM Serif Display', serif; --fb: 'DM Sans', sans-serif;
+  --red:#E8372B; --red-dark:#c22d22; --red-light:#fdf1f0;
+  --charcoal:#1a1a1a; --mid:#5a5a5a; --light:#f5f4f2;
+  --border:#e0ddd8; --radius:14px;
+  --fh:'DM Serif Display',serif; --fb:'DM Sans',sans-serif;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--fb); background: var(--light); color: var(--charcoal); min-height: 100vh; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fb);background:var(--light);color:var(--charcoal);min-height:100vh}
 
-#auth-screen {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #fff8f7 0%, #f5f4f2 60%, #fdecea 100%);
-}
-.auth-card {
-  background: #fff; border-radius: 24px; padding: 52px 48px; width: 100%; max-width: 440px;
-  box-shadow: 0 8px 48px rgba(0,0,0,0.1);
-}
-.logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; }
-.logo-box { width: 40px; height: 40px; background: var(--red); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-.logo-box svg { width: 22px; height: 22px; fill: white; }
-.logo-name { font-family: var(--fh); font-size: 1.5rem; }
-.auth-card h1 { font-family: var(--fh); font-size: 1.9rem; margin-bottom: 8px; }
-.auth-sub { color: var(--mid); font-size: 0.92rem; margin-bottom: 32px; line-height: 1.5; }
-.auth-sub strong { color: var(--red); font-weight: 500; }
-.flabel { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mid); display: block; margin-bottom: 8px; }
-#email-input {
-  width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: 10px;
-  font-family: var(--fb); font-size: 0.95rem; background: #fafafa; outline: none; margin-bottom: 20px;
-}
-#email-input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(232,55,43,0.1); background: #fff; }
-#signin-btn {
-  width: 100%; padding: 15px; background: var(--red); color: #fff; border: none;
-  border-radius: 10px; font-family: var(--fb); font-size: 1rem; font-weight: 600; cursor: pointer;
-}
-#signin-btn:hover { background: var(--red-dark); }
-#auth-error { color: var(--red); font-size: 0.85rem; margin-top: 10px; min-height: 18px; font-weight: 500; }
-.auth-note { margin-top: 24px; font-size: 0.8rem; color: #aaa; text-align: center; }
+/* ── AUTH ── */
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#fff8f7 0%,#f5f4f2 60%,#fdecea 100%)}
+.auth-card{background:#fff;border-radius:24px;padding:52px 48px;width:100%;max-width:440px;box-shadow:0 8px 48px rgba(0,0,0,.1)}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:36px}
+.logo-box{width:40px;height:40px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.logo-box svg{width:22px;height:22px;fill:#fff}
+.logo-name{font-family:var(--fh);font-size:1.5rem}
+.auth-card h1{font-family:var(--fh);font-size:1.9rem;margin-bottom:8px}
+.auth-sub{color:var(--mid);font-size:.92rem;margin-bottom:32px;line-height:1.5}
+.auth-sub strong{color:var(--red);font-weight:500}
+.flabel{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--mid);display:block;margin-bottom:8px}
+#email-input{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--fb);font-size:.95rem;background:#fafafa;outline:none;margin-bottom:20px}
+#email-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(232,55,43,.1);background:#fff}
+#signin-btn{width:100%;padding:15px;background:var(--red);color:#fff;border:none;border-radius:10px;font-family:var(--fb);font-size:1rem;font-weight:600;cursor:pointer}
+#signin-btn:hover{background:var(--red-dark)}
+#auth-error{color:var(--red);font-size:.85rem;margin-top:10px;min-height:18px;font-weight:500}
+.auth-note{margin-top:24px;font-size:.8rem;color:#aaa;text-align:center}
 
-#app-screen { display: none; flex-direction: column; min-height: 100vh; }
-nav {
-  background: #fff; border-bottom: 1px solid var(--border); height: 64px; padding: 0 32px;
-  display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;
-}
-.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
-.nav-logo .logo-box { width: 34px; height: 34px; border-radius: 8px; }
-.nav-logo .logo-box svg { width: 18px; height: 18px; }
-.nav-logo .logo-name { font-size: 1.3rem; }
-.nav-right { display: flex; align-items: center; gap: 16px; }
-.user-badge { display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; background: var(--light); border-radius: 50px; font-size: 0.85rem; color: var(--mid); }
-.avatar { width: 30px; height: 30px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: 700; }
-#signout-btn { padding: 8px 18px; background: transparent; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--fb); font-size: 0.85rem; font-weight: 500; color: var(--mid); cursor: pointer; }
-#signout-btn:hover { border-color: var(--red); color: var(--red); }
+/* ── APP ── */
+#app-screen{display:none;flex-direction:column;min-height:100vh}
+nav{background:#fff;border-bottom:1px solid var(--border);height:64px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 12px rgba(0,0,0,.04)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.nav-logo .logo-box{width:34px;height:34px;border-radius:8px}
+.nav-logo .logo-box svg{width:18px;height:18px}
+.nav-logo .logo-name{font-size:1.3rem}
+.nav-right{display:flex;align-items:center;gap:16px}
+.user-badge{display:flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;background:var(--light);border-radius:50px;font-size:.85rem;color:var(--mid)}
+.avatar{width:30px;height:30px;background:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700}
+#signout-btn{padding:8px 18px;background:transparent;border:1.5px solid var(--border);border-radius:8px;font-family:var(--fb);font-size:.85rem;font-weight:500;color:var(--mid);cursor:pointer}
+#signout-btn:hover{border-color:var(--red);color:var(--red)}
 
-.hero { background: #fff; padding: 56px 32px 48px; text-align: center; border-bottom: 1px solid var(--border); }
-.hero h2 { font-family: var(--fh); font-size: clamp(2rem,4vw,2.8rem); margin-bottom: 12px; }
-.hero h2 em { font-style: italic; color: var(--red); }
-.hero p { color: var(--mid); max-width: 520px; margin: 0 auto; line-height: 1.6; }
+.hero{background:#fff;padding:56px 32px 48px;text-align:center;border-bottom:1px solid var(--border)}
+.hero h2{font-family:var(--fh);font-size:clamp(2rem,4vw,2.8rem);margin-bottom:12px}
+.hero h2 em{font-style:italic;color:var(--red)}
+.hero p{color:var(--mid);max-width:520px;margin:0 auto;line-height:1.6}
 
-.tools-wrap { padding: 48px 32px 64px; max-width: 1200px; margin: 0 auto; width: 100%; }
-.sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 28px; }
-.sec-head h3 { font-family: var(--fh); font-size: 1.4rem; }
-.pill { background: var(--red-light); color: var(--red); font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 50px; text-transform: uppercase; letter-spacing: 0.05em; }
-.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; }
-.tcard { background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 28px 22px 24px; cursor: pointer; transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s; }
-.tcard:hover { border-color: var(--red); transform: translateY(-3px); box-shadow: 0 8px 28px rgba(232,55,43,0.14); }
-.tcard-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 1.5rem; }
-.tcard h4 { font-size: 0.98rem; font-weight: 600; margin-bottom: 6px; }
-.tcard p { font-size: 0.8rem; color: var(--mid); line-height: 1.5; }
+.tools-wrap{padding:48px 32px 64px;max-width:1200px;margin:0 auto;width:100%}
+.sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:28px}
+.sec-head h3{font-family:var(--fh);font-size:1.4rem}
+.pill{background:var(--red-light);color:var(--red);font-size:.75rem;font-weight:600;padding:3px 10px;border-radius:50px;text-transform:uppercase;letter-spacing:.05em}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px}
 
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
-.overlay.open { display: flex; }
-.modal { background: #fff; border-radius: 20px; padding: 40px; max-width: 540px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; max-height: 90vh; overflow-y: auto; }
-#modal-close { position: absolute; top: 18px; right: 18px; width: 32px; height: 32px; background: var(--light); border: none; border-radius: 50%; cursor: pointer; font-size: 1rem; color: var(--mid); }
-.modal h3 { font-family: var(--fh); font-size: 1.6rem; margin-bottom: 8px; padding-right: 32px; }
-.modal-desc { color: var(--mid); font-size: 0.88rem; margin-bottom: 20px; line-height: 1.5; }
-.opt-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mid); margin: 16px 0 8px; }
-.opt-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-.chip { padding: 8px 16px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; font-size: 0.82rem; font-weight: 500; cursor: pointer; color: var(--mid); }
-.chip.active, .chip:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
-.dropzone { border: 2px dashed var(--border); border-radius: 14px; padding: 36px 24px; text-align: center; background: var(--light); position: relative; cursor: pointer; }
-.dropzone.over { border-color: var(--red); background: var(--red-light); }
-.dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-.dz-icon { font-size: 2.2rem; margin-bottom: 10px; }
-.dropzone h4 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
-.dropzone p { font-size: 0.82rem; color: var(--mid); }
-.dz-fmt { margin-top: 8px; font-size: 0.75rem; color: #bbb; letter-spacing: 0.05em; }
-.file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
-.fitem { display: flex; align-items: center; gap: 10px; background: var(--light); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; }
-.fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fsize { color: var(--mid); font-size: 0.78rem; }
-.fremove { background: none; border: none; cursor: pointer; color: #ccc; font-size: 0.95rem; padding: 2px 6px; }
-.fremove:hover { color: var(--red); }
-.prog-wrap { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; margin-top: 14px; display: none; }
-.prog-wrap.show { display: block; }
-.prog-bar { height: 100%; background: var(--red); border-radius: 99px; width: 0%; transition: width 0.3s; }
-.result { margin-top: 14px; padding: 14px 16px; border-radius: 10px; font-size: 0.88rem; font-weight: 500; display: none; white-space: pre-wrap; line-height: 1.5; }
-.result.ok  { background: #edfaf4; color: #1a7a44; display: block; }
-.result.err { background: #fdf0ef; color: var(--red); display: block; }
-.modal-btns { margin-top: 20px; display: flex; gap: 12px; }
-.mbtn { flex: 1; padding: 14px; border-radius: 10px; font-family: var(--fb); font-size: 0.95rem; font-weight: 600; cursor: pointer; border: none; }
-.mbtn.pri { background: var(--red); color: #fff; }
-.mbtn.pri:hover { background: var(--red-dark); }
-.mbtn.sec { background: var(--light); color: var(--mid); border: 1.5px solid var(--border); }
-.mbtn.sec:hover { border-color: #333; color: #333; }
-.footer { text-align: center; padding: 20px 32px; font-size: 0.78rem; color: #bbb; border-top: 1px solid var(--border); }
+.tcard{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:28px 22px 24px;cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s;position:relative}
+.tcard.live:hover{border-color:var(--red);transform:translateY(-3px);box-shadow:0 8px 28px rgba(232,55,43,.14)}
+.tcard.soon{opacity:.6;cursor:default}
+.tcard-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:1.5rem}
+.tcard h4{font-size:.98rem;font-weight:600;margin-bottom:6px}
+.tcard p{font-size:.8rem;color:var(--mid);line-height:1.5}
+.badge{display:inline-flex;align-items:center;gap:4px;margin-top:10px;font-size:.7rem;font-weight:600;padding:3px 9px;border-radius:50px}
+.badge.live-badge{background:#e8f5e9;color:#2e7d32}
+.badge.soon-badge{background:#f5f5f5;color:#999}
 
-@media (max-width: 640px) {
-  .auth-card { padding: 36px 24px; }
-  nav { padding: 0 16px; }
-  .tools-wrap { padding: 28px 16px 48px; }
-  .tgrid { grid-template-columns: repeat(2,1fr); gap: 12px; }
-  .modal { padding: 28px 20px; }
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px;padding:40px;max-width:540px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative;max-height:90vh;overflow-y:auto}
+#modal-close{position:absolute;top:18px;right:18px;width:32px;height:32px;background:var(--light);border:none;border-radius:50%;cursor:pointer;font-size:1rem;color:var(--mid)}
+#modal-close:hover{background:#e0ddd8}
+.modal h3{font-family:var(--fh);font-size:1.6rem;margin-bottom:8px;padding-right:32px}
+.modal-desc{color:var(--mid);font-size:.88rem;margin-bottom:20px;line-height:1.5}
+
+.opt-label{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--mid);margin:16px 0 8px}
+.opt-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.chip{padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-size:.82rem;font-weight:500;cursor:pointer;color:var(--mid)}
+.chip.active,.chip:hover{border-color:var(--red);color:var(--red);background:var(--red-light)}
+
+.dropzone{border:2px dashed var(--border);border-radius:14px;padding:36px 24px;text-align:center;background:var(--light);position:relative;cursor:pointer;margin-top:16px}
+.dropzone.over{border-color:var(--red);background:var(--red-light)}
+.dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-icon{font-size:2.2rem;margin-bottom:10px}
+.dropzone h4{font-size:1rem;font-weight:600;margin-bottom:4px}
+.dropzone p{font-size:.82rem;color:var(--mid)}
+.dz-fmt{margin-top:8px;font-size:.75rem;color:#bbb;letter-spacing:.05em}
+
+.file-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.fitem{display:flex;align-items:center;gap:10px;background:var(--light);border-radius:8px;padding:10px 14px;font-size:.85rem}
+.fname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fsize{color:var(--mid);font-size:.78rem;flex-shrink:0}
+.fremove{background:none;border:none;cursor:pointer;color:#ccc;font-size:.95rem;padding:2px 6px}
+.fremove:hover{color:var(--red)}
+
+.prog-wrap{height:6px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:14px;display:none}
+.prog-wrap.show{display:block}
+.prog-bar{height:100%;background:var(--red);border-radius:99px;width:0%;transition:width .35s}
+
+.status-row{display:none;align-items:center;gap:10px;margin-top:12px;font-size:.85rem;color:var(--mid)}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.result{margin-top:14px;padding:14px 16px;border-radius:10px;font-size:.88rem;font-weight:500;display:none;line-height:1.6}
+.result.ok{background:#edfaf4;color:#1a7a44;display:block}
+.result.err{background:#fdf0ef;color:var(--red);display:block}
+
+.modal-btns{margin-top:20px;display:flex;gap:12px}
+.mbtn{flex:1;padding:14px;border-radius:10px;font-family:var(--fb);font-size:.95rem;font-weight:600;cursor:pointer;border:none;transition:background .2s}
+.mbtn.pri{background:var(--red);color:#fff}
+.mbtn.pri:hover:not(:disabled){background:var(--red-dark)}
+.mbtn.pri:disabled{background:#ccc;cursor:not-allowed}
+.mbtn.sec{background:var(--light);color:var(--mid);border:1.5px solid var(--border)}
+.mbtn.sec:hover{border-color:#333;color:#333}
+
+.footer{text-align:center;padding:20px 32px;font-size:.78rem;color:#bbb;border-top:1px solid var(--border)}
+
+@media(max-width:640px){
+  .auth-card{padding:36px 24px}
+  nav{padding:0 16px}
+  .tools-wrap{padding:28px 16px 48px}
+  .tgrid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .modal{padding:28px 20px}
 }
 </style>
 </head>
@@ -127,9 +133,7 @@ nav {
 <div id="auth-screen">
   <div class="auth-card">
     <div class="logo-row">
-      <div class="logo-box">
-        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
-      </div>
+      <div class="logo-box"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg></div>
       <span class="logo-name">OfficePDF</span>
     </div>
     <h1>Welcome</h1>
@@ -146,9 +150,7 @@ nav {
 <div id="app-screen">
   <nav>
     <a class="nav-logo" href="#">
-      <div class="logo-box">
-        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
-      </div>
+      <div class="logo-box"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg></div>
       <span class="logo-name">OfficePDF</span>
     </a>
     <div class="nav-right">
@@ -159,17 +161,20 @@ nav {
       <button id="signout-btn">Sign out</button>
     </div>
   </nav>
+
   <div class="hero">
     <h2>Every PDF tool your office <em>needs.</em></h2>
-    <p>Merge, split, compress, convert — all in one place for Dewan Architects.</p>
+    <p>Powered by Stirling-PDF — private, self-hosted, no file leaves your server.</p>
   </div>
+
   <div class="tools-wrap">
     <div class="sec-head"><h3>Organize &amp; Combine</h3><span class="pill">PDF Tools</span></div>
     <div class="tgrid" id="grid1"></div>
     <div class="sec-head" style="margin-top:44px"><h3>Convert Files</h3><span class="pill">Convert</span></div>
     <div class="tgrid" id="grid2"></div>
   </div>
-  <div class="footer">OfficePDF — internal tool for Dewan Architects. Files never leave your browser.</div>
+
+  <div class="footer">OfficePDF — Dewan Architects. Powered by Stirling-PDF. Files never leave your server.</div>
 </div>
 
 <!-- MODAL -->
@@ -183,12 +188,16 @@ nav {
     <div class="dropzone" id="dropzone">
       <input type="file" id="file-input" />
       <div class="dz-icon">&#128194;</div>
-      <h4>Drop files here or click to browse</h4>
-      <p>Select files from your device</p>
+      <h4>Drop file here or click to browse</h4>
+      <p>Select a file from your device</p>
       <div class="dz-fmt" id="dz-fmt">PDF files only</div>
     </div>
     <div class="file-list" id="file-list"></div>
     <div class="prog-wrap" id="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+    <div class="status-row" id="status-row">
+      <div class="spinner"></div>
+      <span id="status-text">Processing...</span>
+    </div>
     <div class="result" id="result"></div>
     <div class="modal-btns">
       <button class="mbtn sec" id="clear-btn">Clear</button>
@@ -200,154 +209,126 @@ nav {
 <script>
 (function(){
 
-var ALLOWED_DOMAIN = 'dewan-architects.com';
+var DOMAIN = 'dewan-architects.com';
 
+// live:true  = fully wired to Stirling-PDF
+// live:false = UI shown but button disabled (easy to enable later)
 var PDF_TOOLS = [
-  {id:'merge',    icon:'&#128279;', label:'Merge PDF',     desc:'Combine multiple PDFs into one document.',    action:'Merge PDFs',    fmt:'PDF files', accept:'.pdf', multi:true,  color:'#fdecea'},
-  {id:'split',    icon:'&#9986;',   label:'Split PDF',      desc:'Divide a PDF into separate pages or ranges.', action:'Split PDF',     fmt:'PDF files', accept:'.pdf', multi:false, color:'#fdf3e3', opts:['Every page','By range','Extract pages']},
-  {id:'compress', icon:'&#128230;', label:'Compress PDF',   desc:'Reduce file size while keeping quality.',     action:'Compress',      fmt:'PDF files', accept:'.pdf', multi:false, color:'#e8f4fd', opts:['Low (best quality)','Medium','High (smallest)']},
-  {id:'rotate',   icon:'&#128260;', label:'Rotate PDF',     desc:'Rotate pages 90, 180 or 270 degrees.',        action:'Rotate',        fmt:'PDF files', accept:'.pdf', multi:false, color:'#edf9f0', opts:['90 Clockwise','180','90 Counter-clockwise']},
-  {id:'protect',  icon:'&#128274;', label:'Protect PDF',    desc:'Add a password to your PDF.',                 action:'Add Password',  fmt:'PDF files', accept:'.pdf', multi:false, color:'#f3eefa'},
-  {id:'unlock',   icon:'&#128275;', label:'Unlock PDF',     desc:'Remove a password from a protected PDF.',     action:'Unlock',        fmt:'PDF files', accept:'.pdf', multi:false, color:'#fef9e7'},
-  {id:'reorder',  icon:'&#128203;', label:'Reorder Pages',  desc:'Rearrange pages in any order.',               action:'Reorder',       fmt:'PDF files', accept:'.pdf', multi:false, color:'#fdecea'},
-  {id:'sign',     icon:'&#9997;',   label:'Sign PDF',       desc:'Add your signature to a document.',           action:'Sign',          fmt:'PDF files', accept:'.pdf', multi:false, color:'#e3f2fd'}
+  { id:'merge',    icon:'&#128279;', label:'Merge PDF',    desc:'Combine multiple PDFs into one document.',    action:'Merge PDFs',   fmt:'PDF files', accept:'.pdf', multi:true,  color:'#fdecea', api:'/api/merge',      live:false,
+    opts:[], optKey:'' },
+  { id:'split',    icon:'&#9986;',   label:'Split PDF',    desc:'Divide a PDF into separate pages or ranges.', action:'Split PDF',    fmt:'PDF files', accept:'.pdf', multi:false, color:'#fdf3e3', api:'/api/split',      live:false,
+    opts:['Every page','By range'], optKey:'splitType' },
+  { id:'compress', icon:'&#128230;', label:'Compress PDF', desc:'Reduce file size while keeping quality.',     action:'Compress',     fmt:'PDF files', accept:'.pdf', multi:false, color:'#e8f4fd', api:'/api/compress',   live:true,
+    opts:['Low (best quality)','Medium','High (smallest)'], optKey:'level', optMap:{'Low (best quality)':'low','Medium':'medium','High (smallest)':'high'} },
+  { id:'rotate',   icon:'&#128260;', label:'Rotate PDF',   desc:'Rotate pages 90, 180 or 270 degrees.',        action:'Rotate',       fmt:'PDF files', accept:'.pdf', multi:false, color:'#edf9f0', api:'/api/rotate',     live:false,
+    opts:['90 Clockwise','180','90 Counter-clockwise'], optKey:'rotation' },
+  { id:'protect',  icon:'&#128274;', label:'Protect PDF',  desc:'Add a password to secure your PDF.',          action:'Add Password', fmt:'PDF files', accept:'.pdf', multi:false, color:'#f3eefa', api:'/api/protect',    live:false },
+  { id:'unlock',   icon:'&#128275;', label:'Unlock PDF',   desc:'Remove a password from a protected PDF.',     action:'Unlock',       fmt:'PDF files', accept:'.pdf', multi:false, color:'#fef9e7', api:'/api/unlock',     live:false },
+  { id:'reorder',  icon:'&#128203;', label:'Reorder Pages',desc:'Rearrange pages in any order.',               action:'Reorder',      fmt:'PDF files', accept:'.pdf', multi:false, color:'#fdecea', api:null,              live:false },
+  { id:'sign',     icon:'&#9997;',   label:'Sign PDF',     desc:'Add your digital signature.',                 action:'Sign',         fmt:'PDF files', accept:'.pdf', multi:false, color:'#e3f2fd', api:null,              live:false }
 ];
 
 var CONV_TOOLS = [
-  {id:'p2w', icon:'&#128221;', label:'PDF to Word',  desc:'Convert PDF to editable .docx.',   action:'Convert', fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#e8f0fe'},
-  {id:'p2e', icon:'&#128202;', label:'PDF to Excel', desc:'Extract tables to spreadsheet.',   action:'Convert', fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#e6f4ea'},
-  {id:'p2p', icon:'&#128209;', label:'PDF to PPT',   desc:'Turn PDF into editable slides.',   action:'Convert', fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#fce8e6'},
-  {id:'w2p', icon:'&#128292;', label:'Word to PDF',  desc:'Convert .docx files to PDF.',      action:'Convert', fmt:'.doc,.docx', accept:'.doc,.docx', multi:false, color:'#e8f0fe'},
-  {id:'e2p', icon:'&#128200;', label:'Excel to PDF', desc:'Convert spreadsheets to PDF.',     action:'Convert', fmt:'.xls,.xlsx', accept:'.xls,.xlsx', multi:false, color:'#e6f4ea'},
-  {id:'s2p', icon:'&#127919;', label:'PPT to PDF',   desc:'Convert presentations to PDF.',    action:'Convert', fmt:'.ppt,.pptx', accept:'.ppt,.pptx', multi:false, color:'#fce8e6'},
-  {id:'i2p', icon:'&#128444;', label:'Image to PDF', desc:'Convert JPG or PNG into a PDF.',   action:'Convert', fmt:'Image files', accept:'image/*',    multi:true,  color:'#fff8e1'},
-  {id:'p2i', icon:'&#128247;', label:'PDF to Image', desc:'Export PDF pages as images.',      action:'Export',  fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#fce4ec'}
+  { id:'p2w', icon:'&#128221;', label:'PDF to Word',  desc:'Convert PDF to editable .docx file.',  action:'Convert to Word',  fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#e8f0fe', api:'/api/pdf-to-word', live:true  },
+  { id:'p2e', icon:'&#128202;', label:'PDF to Excel', desc:'Extract tables to spreadsheet.',        action:'Convert to Excel', fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#e6f4ea', api:null,               live:false },
+  { id:'p2p', icon:'&#128209;', label:'PDF to PPT',   desc:'Turn PDF into editable slides.',        action:'Convert to PPT',   fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#fce8e6', api:null,               live:false },
+  { id:'w2p', icon:'&#128292;', label:'Word to PDF',  desc:'Convert .docx files to PDF.',           action:'Convert to PDF',   fmt:'.doc,.docx', accept:'.doc,.docx', multi:false, color:'#e8f0fe', api:'/api/word-to-pdf', live:false },
+  { id:'e2p', icon:'&#128200;', label:'Excel to PDF', desc:'Convert spreadsheets to PDF.',          action:'Convert to PDF',   fmt:'.xls,.xlsx', accept:'.xls,.xlsx', multi:false, color:'#e6f4ea', api:null,               live:false },
+  { id:'s2p', icon:'&#127919;', label:'PPT to PDF',   desc:'Convert presentations to PDF.',         action:'Convert to PDF',   fmt:'.ppt,.pptx', accept:'.ppt,.pptx', multi:false, color:'#fce8e6', api:null,               live:false },
+  { id:'i2p', icon:'&#128444;', label:'Image to PDF', desc:'Convert JPG or PNG images into a PDF.', action:'Convert to PDF',   fmt:'Image files', accept:'image/*',   multi:true,  color:'#fff8e1', api:'/api/img-to-pdf',  live:false },
+  { id:'p2i', icon:'&#128247;', label:'PDF to Image', desc:'Export PDF pages as PNG images.',       action:'Export Images',    fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#fce4ec', api:'/api/pdf-to-img',  live:true  }
 ];
 
 var activeTool = null;
 var selFiles   = [];
 var selOpt     = '';
 
-/* SIGN IN */
-var signinBtn = document.getElementById('signin-btn');
-var emailInp  = document.getElementById('email-input');
-var authErr   = document.getElementById('auth-error');
+/* ── AUTH ── */
+document.getElementById('signin-btn').addEventListener('click', doLogin);
+document.getElementById('email-input').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
 
-signinBtn.addEventListener('click', function(){ doLogin(); });
-emailInp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ doLogin(); } });
-
-function doLogin() {
-  var raw   = emailInp.value;
-  var email = raw.trim().toLowerCase();
-  authErr.textContent = '';
-
-  if (!email) {
-    authErr.textContent = 'Please enter your email address.';
-    return;
+function doLogin(){
+  var email = document.getElementById('email-input').value.trim().toLowerCase();
+  var errEl = document.getElementById('auth-error');
+  errEl.textContent = '';
+  if(!email){ errEl.textContent='Please enter your email address.'; return; }
+  var at = email.indexOf('@');
+  if(at===-1 || email.substring(at+1)!==DOMAIN){
+    errEl.textContent='Access is restricted to @'+DOMAIN+' addresses only.'; return;
   }
-
-  var atPos = email.indexOf('@');
-  if (atPos === -1) {
-    authErr.textContent = 'Please enter a valid email address.';
-    return;
-  }
-
-  var domain = email.substring(atPos + 1);
-  if (domain !== ALLOWED_DOMAIN) {
-    authErr.textContent = 'Access is restricted to @' + ALLOWED_DOMAIN + ' addresses only.';
-    return;
-  }
-
-  var username = email.substring(0, atPos);
-  document.getElementById('uinitials').textContent = username.substring(0, 2).toUpperCase();
+  document.getElementById('uinitials').textContent = email.substring(0,at).substring(0,2).toUpperCase();
   document.getElementById('uemail').textContent = email;
-
-  document.getElementById('auth-screen').style.display = 'none';
-  var appEl = document.getElementById('app-screen');
-  appEl.style.display    = 'flex';
-  appEl.style.flexDirection = 'column';
-
+  document.getElementById('auth-screen').style.display='none';
+  var app=document.getElementById('app-screen');
+  app.style.display='flex'; app.style.flexDirection='column';
   buildGrids();
 }
 
 document.getElementById('signout-btn').addEventListener('click', function(){
-  document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('auth-screen').style.display = 'flex';
-  emailInp.value = '';
-  authErr.textContent = '';
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('email-input').value='';
 });
 
-/* BUILD GRIDS */
-function buildGrids() {
-  buildGrid(PDF_TOOLS,  'grid1');
-  buildGrid(CONV_TOOLS, 'grid2');
-}
+/* ── GRIDS ── */
+function buildGrids(){ buildGrid(PDF_TOOLS,'grid1'); buildGrid(CONV_TOOLS,'grid2'); }
 
-function buildGrid(toolList, gridId) {
-  var grid = document.getElementById(gridId);
-  grid.innerHTML = '';
-  for (var i = 0; i < toolList.length; i++) {
+function buildGrid(list, id){
+  var g=document.getElementById(id); g.innerHTML='';
+  for(var i=0;i<list.length;i++){
     (function(t){
-      var card = document.createElement('div');
-      card.className = 'tcard';
-      card.innerHTML =
-        '<div class="tcard-icon" style="background:' + t.color + '">' + t.icon + '</div>' +
-        '<h4>' + t.label + '</h4>' +
-        '<p>' + t.desc + '</p>';
-      card.addEventListener('click', function(){ openModal(t); });
-      grid.appendChild(card);
-    })(toolList[i]);
+      var c=document.createElement('div');
+      c.className='tcard '+(t.live?'live':'soon');
+      c.innerHTML=
+        '<div class="tcard-icon" style="background:'+t.color+'">'+t.icon+'</div>'+
+        '<h4>'+t.label+'</h4><p>'+t.desc+'</p>'+
+        (t.live
+          ? '<span class="badge live-badge">&#10003; Live</span>'
+          : '<span class="badge soon-badge">Coming soon</span>');
+      if(t.live) c.addEventListener('click', function(){ openModal(t); });
+      g.appendChild(c);
+    })(list[i]);
   }
 }
 
-/* MODAL */
-function openModal(t) {
-  activeTool = t;
-  selFiles   = [];
-  selOpt     = t.opts ? t.opts[0] : '';
+/* ── MODAL ── */
+function openModal(t){
+  activeTool=t; selFiles=[]; selOpt=t.opts&&t.opts.length ? t.opts[0] : '';
 
-  document.getElementById('m-icon').innerHTML  = t.icon;
-  document.getElementById('m-title').textContent = t.label;
-  document.getElementById('m-desc').textContent  = t.desc;
-  document.getElementById('run-label').textContent = t.action;
-  document.getElementById('dz-fmt').textContent  = t.fmt;
-  document.getElementById('file-list').innerHTML = '';
-  document.getElementById('result').className    = 'result';
-  document.getElementById('result').textContent  = '';
+  document.getElementById('m-icon').innerHTML=t.icon;
+  document.getElementById('m-title').textContent=t.label;
+  document.getElementById('m-desc').textContent=t.desc;
+  document.getElementById('run-label').textContent=t.action;
+  document.getElementById('dz-fmt').textContent=t.fmt;
+  document.getElementById('file-list').innerHTML='';
+  document.getElementById('result').className='result';
+  document.getElementById('result').textContent='';
   document.getElementById('prog-wrap').classList.remove('show');
-  document.getElementById('prog-bar').style.width = '0%';
+  document.getElementById('prog-bar').style.width='0%';
+  document.getElementById('status-row').style.display='none';
+  document.getElementById('run-btn').disabled=false;
 
-  var fi = document.getElementById('file-input');
-  fi.accept   = t.accept;
-  fi.multiple = !!t.multi;
-  fi.value    = '';
+  var fi=document.getElementById('file-input');
+  fi.accept=t.accept; fi.multiple=!!t.multi; fi.value='';
 
-  var optsEl = document.getElementById('m-opts');
-  optsEl.innerHTML = '';
-  if (t.opts && t.opts.length) {
-    var lb  = document.createElement('div');
-    lb.className   = 'opt-label';
-    lb.textContent = 'Options';
-    optsEl.appendChild(lb);
-
-    var row = document.createElement('div');
-    row.className = 'opt-row';
-
-    for (var j = 0; j < t.opts.length; j++) {
-      (function(optText, idx){
-        var chip = document.createElement('div');
-        chip.className   = 'chip' + (idx === 0 ? ' active' : '');
-        chip.textContent = optText;
-        chip.addEventListener('click', function(){
-          var chips = row.querySelectorAll('.chip');
-          for (var k = 0; k < chips.length; k++) chips[k].classList.remove('active');
-          chip.classList.add('active');
-          selOpt = optText;
+  // Option chips
+  var oc=document.getElementById('m-opts'); oc.innerHTML='';
+  if(t.opts && t.opts.length){
+    var lb=document.createElement('div'); lb.className='opt-label'; lb.textContent='Options'; oc.appendChild(lb);
+    var row=document.createElement('div'); row.className='opt-row';
+    for(var j=0;j<t.opts.length;j++){
+      (function(text,idx){
+        var chip=document.createElement('div');
+        chip.className='chip'+(idx===0?' active':'');
+        chip.textContent=text;
+        chip.addEventListener('click',function(){
+          row.querySelectorAll('.chip').forEach(function(x){x.classList.remove('active');});
+          chip.classList.add('active'); selOpt=text;
         });
         row.appendChild(chip);
-      })(t.opts[j], j);
+      })(t.opts[j],j);
     }
-    optsEl.appendChild(row);
+    oc.appendChild(row);
   }
 
   document.getElementById('overlay').classList.add('open');
@@ -357,109 +338,125 @@ document.getElementById('modal-close').addEventListener('click', function(){
   document.getElementById('overlay').classList.remove('open');
 });
 document.getElementById('overlay').addEventListener('click', function(e){
-  if (e.target === document.getElementById('overlay')){
+  if(e.target===document.getElementById('overlay'))
     document.getElementById('overlay').classList.remove('open');
-  }
 });
 
-/* FILES */
-document.getElementById('file-input').addEventListener('change', function(){
-  var picked = Array.from(this.files);
-  if (activeTool && activeTool.multi) {
-    selFiles = selFiles.concat(picked);
-  } else {
-    selFiles = picked.length ? [picked[0]] : [];
-  }
-  renderFileList();
+/* ── FILES ── */
+document.getElementById('file-input').addEventListener('change',function(){
+  var picked=Array.from(this.files);
+  selFiles=(activeTool&&activeTool.multi)?selFiles.concat(picked):(picked.length?[picked[0]]:[]);
+  renderFiles();
 });
 
-var dz = document.getElementById('dropzone');
-dz.addEventListener('dragover',  function(e){ e.preventDefault(); dz.classList.add('over'); });
-dz.addEventListener('dragleave', function(){  dz.classList.remove('over'); });
-dz.addEventListener('drop', function(e){
-  e.preventDefault();
-  dz.classList.remove('over');
-  var dropped = Array.from(e.dataTransfer.files);
-  if (activeTool && activeTool.multi) {
-    selFiles = selFiles.concat(dropped);
-  } else {
-    selFiles = dropped.length ? [dropped[0]] : [];
-  }
-  renderFileList();
+var dz=document.getElementById('dropzone');
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',function(){dz.classList.remove('over');});
+dz.addEventListener('drop',function(e){
+  e.preventDefault(); dz.classList.remove('over');
+  var dropped=Array.from(e.dataTransfer.files);
+  selFiles=(activeTool&&activeTool.multi)?selFiles.concat(dropped):(dropped.length?[dropped[0]]:[]);
+  renderFiles();
 });
 
-function renderFileList() {
-  var list = document.getElementById('file-list');
-  list.innerHTML = '';
-  for (var i = 0; i < selFiles.length; i++) {
-    (function(f, idx){
-      var item = document.createElement('div');
-      item.className = 'fitem';
-      item.innerHTML =
-        '<span>&#128196;</span>' +
-        '<span class="fname">' + f.name + '</span>' +
-        '<span class="fsize">' + fmtSize(f.size) + '</span>' +
-        '<button class="fremove" data-idx="' + idx + '">&#10005;</button>';
+function renderFiles(){
+  var list=document.getElementById('file-list'); list.innerHTML='';
+  for(var i=0;i<selFiles.length;i++){
+    (function(f,idx){
+      var item=document.createElement('div'); item.className='fitem';
+      item.innerHTML=
+        '<span>&#128196;</span>'+
+        '<span class="fname">'+f.name+'</span>'+
+        '<span class="fsize">'+fmtSize(f.size)+'</span>'+
+        '<button class="fremove" data-idx="'+idx+'">&#10005;</button>';
       list.appendChild(item);
-    })(selFiles[i], i);
+    })(selFiles[i],i);
   }
-  var removeButtons = list.querySelectorAll('.fremove');
-  for (var r = 0; r < removeButtons.length; r++) {
-    removeButtons[r].addEventListener('click', function(){
-      var idx = parseInt(this.getAttribute('data-idx'));
-      selFiles.splice(idx, 1);
-      renderFileList();
+  list.querySelectorAll('.fremove').forEach(function(b){
+    b.addEventListener('click',function(){
+      selFiles.splice(parseInt(b.getAttribute('data-idx')),1); renderFiles();
     });
-  }
+  });
 }
 
-function fmtSize(bytes) {
-  if (bytes < 1024)    return bytes + ' B';
-  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / 1048576).toFixed(2) + ' MB';
-}
+function fmtSize(n){return n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB';}
 
-document.getElementById('clear-btn').addEventListener('click', function(){
-  selFiles = [];
-  document.getElementById('file-list').innerHTML = '';
-  document.getElementById('file-input').value = '';
-  document.getElementById('result').className = 'result';
-  document.getElementById('result').textContent = '';
+document.getElementById('clear-btn').addEventListener('click',function(){
+  selFiles=[]; document.getElementById('file-list').innerHTML='';
+  document.getElementById('file-input').value='';
+  document.getElementById('result').className='result';
+  document.getElementById('result').textContent='';
   document.getElementById('prog-wrap').classList.remove('show');
-  document.getElementById('prog-bar').style.width = '0%';
+  document.getElementById('status-row').style.display='none';
+  document.getElementById('prog-bar').style.width='0%';
 });
 
-/* RUN */
-document.getElementById('run-btn').addEventListener('click', function(){
-  if (!selFiles.length) {
-    showResult('err', 'Please select at least one file first.');
-    return;
+/* ── RUN ── */
+document.getElementById('run-btn').addEventListener('click',function(){
+  var t=activeTool;
+  if(!t||!t.live) return;
+  if(!selFiles.length){ showResult('err','Please select at least one file first.'); return; }
+
+  var fd=new FormData();
+  for(var i=0;i<selFiles.length;i++){
+    fd.append(t.multi?'files':'file', selFiles[i]);
   }
-  document.getElementById('result').className = 'result';
-  document.getElementById('prog-wrap').classList.add('show');
-  document.getElementById('prog-bar').style.width = '0%';
+  if(t.optKey && selOpt){
+    var val = t.optMap ? (t.optMap[selOpt]||selOpt) : selOpt;
+    fd.append(t.optKey, val);
+  }
 
-  var pct = 0;
-  var iv = setInterval(function(){
-    pct += Math.random() * 18 + 6;
-    if (pct >= 100) {
-      pct = 100;
+  // UI: processing state
+  document.getElementById('result').className='result';
+  document.getElementById('result').textContent='';
+  document.getElementById('prog-wrap').classList.add('show');
+  document.getElementById('status-row').style.display='flex';
+  document.getElementById('status-text').textContent='Sending to Stirling-PDF...';
+  document.getElementById('run-btn').disabled=true;
+
+  var pct=0;
+  var iv=setInterval(function(){
+    pct+=Math.random()*5+2;
+    if(pct>88) pct=88;
+    document.getElementById('prog-bar').style.width=pct+'%';
+  },400);
+
+  fetch(t.api,{method:'POST',body:fd})
+    .then(function(res){
       clearInterval(iv);
-      var names  = selFiles.map(function(f){ return f.name; }).join(', ');
-      var optStr = selOpt ? ' (' + selOpt + ')' : '';
-      showResult('ok',
-        'Done! ' + activeTool.action + optStr + ' applied to: ' + names + '\n\n' +
-        'Note: To enable real file processing, connect this interface to a PDF backend such as the ILovePDF API or pdf-lib.js.'
-      );
-    }
-    document.getElementById('prog-bar').style.width = pct + '%';
-  }, 160);
+      if(!res.ok){
+        return res.json().then(function(d){ throw new Error(d.error||'Server error '+res.status); });
+      }
+      document.getElementById('status-text').textContent='Downloading...';
+      document.getElementById('prog-bar').style.width='95%';
+      var cd=res.headers.get('content-disposition')||'';
+      var match=cd.match(/filename="?([^"]+)"?/);
+      var filename=match?match[1]:'output';
+      return res.blob().then(function(blob){
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');
+        a.href=url; a.download=filename;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        setTimeout(function(){URL.revokeObjectURL(url);},1000);
+        document.getElementById('prog-bar').style.width='100%';
+        document.getElementById('status-row').style.display='none';
+        document.getElementById('run-btn').disabled=false;
+        showResult('ok','&#10003; Done! "'+filename+'" has been downloaded to your device.');
+      });
+    })
+    .catch(function(err){
+      clearInterval(iv);
+      document.getElementById('prog-wrap').classList.remove('show');
+      document.getElementById('status-row').style.display='none';
+      document.getElementById('run-btn').disabled=false;
+      showResult('err','&#9888; Error: '+err.message+'\n\nCheck that Stirling-PDF is running and STIRLING_URL is set correctly in Railway.');
+    });
 });
 
-function showResult(cls, msg) {
-  var r = document.getElementById('result');
-  r.className   = 'result ' + cls;
-  r.textContent = msg;
+function showResult(cls,msg){
+  var r=document.getElementById('result');
+  r.className='result '+cls; r.innerHTML=msg;
 }
 
 })();
