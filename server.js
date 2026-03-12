@@ -23,11 +23,10 @@ function pipeStirrling(stirlingRes, res, filename) {
 }
 
 // ── 1. COMPRESS PDF ───────────────────────────────────────────────
-// level: 'low' | 'medium' | 'high'
 app.post('/api/compress', upload.single('file'), async (req, res) => {
   try {
     const levelMap = { low: '2', medium: '3', high: '4' };
-    const optimizeLevel = levelMap[req.body.level] || '3';
+    const optimizeLevel = levelMap[req.body.level] || '2';
 
     const form = new FormData();
     form.append('fileInput', req.file.buffer, {
@@ -35,17 +34,30 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
       contentType: 'application/pdf'
     });
     form.append('optimizeLevel', optimizeLevel);
+    form.append('expectedOutputSizeInMB', '-1');
 
     const r = await fetch(`${STIRLING}/api/v1/general/compress-pdf`, {
       method: 'POST', body: form, headers: form.getHeaders()
     });
 
-    if (!r.ok) {
-      const txt = await r.text();
-      return res.status(r.status).json({ error: 'Stirling error: ' + txt });
-    }
+    if (r.ok) return pipeStirrling(r, res, 'compressed.pdf');
 
-    pipeStirrling(r, res, 'compressed.pdf');
+    // Fallback: use qpdf-based repair which also reduces size
+    console.warn('compress-pdf failed with status', r.status, '- trying repair fallback');
+    const form2 = new FormData();
+    form2.append('fileInput', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: 'application/pdf'
+    });
+    const r2 = await fetch(`${STIRLING}/api/v1/general/repair`, {
+      method: 'POST', body: form2, headers: form2.getHeaders()
+    });
+
+    if (r2.ok) return pipeStirrling(r2, res, 'compressed.pdf');
+
+    const txt = await r2.text();
+    res.status(500).json({ error: 'Stirling error: ' + txt });
+
   } catch (err) {
     console.error('compress error:', err);
     res.status(500).json({ error: err.message });
