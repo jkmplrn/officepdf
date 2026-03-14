@@ -32,19 +32,46 @@ async function gotenbergError(gRes) {
 }
 
 // ── 1. COMPRESS PDF ───────────────────────────────────────────────
-// Use qpdf directly via Gotenberg's merge endpoint which reprocesses/compresses
+// Low:    merge only (qpdf linearize) — preserves all quality
+// Medium: convert to PDF/A-1b via LibreOffice — strips extras, recompresses
+// High:   convert to PDF/A-1b + flatten — maximum reduction
 app.post('/api/compress', upload.single('file'), async (req, res) => {
   try {
-    const form = new FormData();
-    form.append('files', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: 'application/pdf'
-    });
+    const level = req.body.level || 'medium';
+    let r;
 
-    // Gotenberg's merge with a single file runs it through qpdf which compresses it
-    const r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, {
-      method: 'POST', body: form, headers: form.getHeaders()
-    });
+    if (level === 'low') {
+      // Low: just reprocess through qpdf via merge — minimal compression
+      const form = new FormData();
+      form.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
+      r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, { method: 'POST', body: form, headers: form.getHeaders() });
+
+    } else if (level === 'medium') {
+      // Medium: convert to PDF/A-2b — recompresses streams, strips metadata
+      const form = new FormData();
+      form.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
+      form.append('pdfa', 'PDF/A-2b');
+      r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, { method: 'POST', body: form, headers: form.getHeaders() });
+      if (!r.ok) {
+        // fallback to merge if convert fails
+        const form2 = new FormData();
+        form2.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
+        r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, { method: 'POST', body: form2, headers: form2.getHeaders() });
+      }
+
+    } else {
+      // High: PDF/A-1b — strictest archival format, strips the most
+      const form = new FormData();
+      form.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
+      form.append('pdfa', 'PDF/A-1b');
+      form.append('pdfua', 'false');
+      r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, { method: 'POST', body: form, headers: form.getHeaders() });
+      if (!r.ok) {
+        const form2 = new FormData();
+        form2.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
+        r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, { method: 'POST', body: form2, headers: form2.getHeaders() });
+      }
+    }
 
     if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
     pipeResponse(r, res, 'compressed.pdf');
@@ -55,36 +82,32 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
 });
 
 // ── 2. PDF TO IMAGE ───────────────────────────────────────────────
-// Gotenberg doesn't have a native PDF→image route
-// We use Chromium's screenshot by first converting PDF pages via pdfengines flatten
-// then screenshotting — best workaround: convert PDF→HTML via LibreOffice then screenshot
+// Same retry logic as PDF to Word — LibreOffice needs to warm up
 app.post('/api/pdf-to-img', upload.single('file'), async (req, res) => {
-  try {
-    // Use LibreOffice to convert PDF to PNG images
-    // LibreOffice can export PDF as image format directly
+  async function attempt(tries) {
     const form = new FormData();
     form.append('files', req.file.buffer, {
       filename: 'input.pdf',
       contentType: 'application/pdf'
     });
-    form.append('nativePageRanges', '1-20');
-
     const r = await fetch(`${GOTENBERG}/forms/libreoffice/convert`, {
-      method: 'POST', body: form, headers: form.getHeaders(),
-      timeout: 60000
+      method: 'POST', body: form, headers: form.getHeaders()
     });
-
-    if (r.ok) {
-      const ct = r.headers.get('content-type') || '';
-      const cd = r.headers.get('content-disposition') || '';
-      const fname = cd.match(/filename="?([^"]+)"?/) ? cd.match(/filename="?([^"]+)"?/)[1] : 'output.zip';
-      res.setHeader('Content-Type', ct);
-      res.setHeader('Content-Disposition', 'attachment; filename="pdf-images.zip"');
-      return r.body.pipe(res);
+    if (r.status === 503 && tries > 1) {
+      console.log('LibreOffice not ready for img, waiting 8s... (' + tries + ' tries left)');
+      await new Promise(resolve => setTimeout(resolve, 8000));
+      return attempt(tries - 1);
     }
+    return r;
+  }
 
-    const errText = await r.text();
-    res.status(500).json({ error: 'PDF to image failed: ' + errText });
+  try {
+    const r = await attempt(4);
+    if (!r.ok) {
+      const errText = await r.text();
+      return res.status(500).json({ error: 'PDF to image failed: ' + errText });
+    }
+    pipeResponse(r, res, 'pdf-images.zip');
   } catch (err) {
     console.error('pdf-to-img error:', err);
     res.status(500).json({ error: err.message });
@@ -92,30 +115,27 @@ app.post('/api/pdf-to-img', upload.single('file'), async (req, res) => {
 });
 
 // ── 3. PDF TO WORD ────────────────────────────────────────────────
+// LibreOffice can take 20-30s to start cold — retry with longer waits
 app.post('/api/pdf-to-word', upload.single('file'), async (req, res) => {
-  // Retry up to 3 times — LibreOffice in Gotenberg can be slow to start
   async function attempt(tries) {
     const form = new FormData();
     form.append('files', req.file.buffer, {
       filename: req.file.originalname,
       contentType: 'application/pdf'
     });
-
     const r = await fetch(`${GOTENBERG}/forms/libreoffice/convert`, {
       method: 'POST', body: form, headers: form.getHeaders()
     });
-
     if (r.status === 503 && tries > 1) {
-      console.log('LibreOffice 503, retrying in 3s...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('LibreOffice not ready, waiting 8s... (' + tries + ' tries left)');
+      await new Promise(resolve => setTimeout(resolve, 8000));
       return attempt(tries - 1);
     }
-
     return r;
   }
 
   try {
-    const r = await attempt(3);
+    const r = await attempt(4); // up to 4 tries = ~24s wait total
     if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
     pipeResponse(r, res, 'converted.docx');
   } catch (err) {
