@@ -32,49 +32,31 @@ async function gotenbergError(gRes) {
 }
 
 // ── 1. COMPRESS PDF ───────────────────────────────────────────────
-// Low:    merge only (qpdf linearize) — preserves all quality
-// Medium: convert to PDF/A-1b via LibreOffice — strips extras, recompresses
-// High:   convert to PDF/A-1b + flatten — maximum reduction
+// Low:    qpdf linearize only — fastest, least reduction
+// Medium: PDF/A-2b conversion — recompresses all streams
+// High:   PDF/A-1b conversion — strictest, most reduction
 app.post('/api/compress', upload.single('file'), async (req, res) => {
   try {
     const level = req.body.level || 'medium';
-    let r;
 
     if (level === 'low') {
-      // Low: just reprocess through qpdf via merge — minimal compression
+      // Just reprocess through qpdf via merge
       const form = new FormData();
       form.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
-      r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, { method: 'POST', body: form, headers: form.getHeaders() });
-
-    } else if (level === 'medium') {
-      // Medium: convert to PDF/A-2b — recompresses streams, strips metadata
-      const form = new FormData();
-      form.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
-      form.append('pdfa', 'PDF/A-2b');
-      r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, { method: 'POST', body: form, headers: form.getHeaders() });
-      if (!r.ok) {
-        // fallback to merge if convert fails
-        const form2 = new FormData();
-        form2.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
-        r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, { method: 'POST', body: form2, headers: form2.getHeaders() });
-      }
-
-    } else {
-      // High: PDF/A-1b — strictest archival format, strips the most
-      const form = new FormData();
-      form.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
-      form.append('pdfa', 'PDF/A-1b');
-      form.append('pdfua', 'false');
-      r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, { method: 'POST', body: form, headers: form.getHeaders() });
-      if (!r.ok) {
-        const form2 = new FormData();
-        form2.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
-        r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, { method: 'POST', body: form2, headers: form2.getHeaders() });
-      }
+      const r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, { method: 'POST', body: form, headers: form.getHeaders() });
+      if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
+      return pipeResponse(r, res, 'compressed.pdf');
     }
 
+    // Medium and High: use PDF/A conversion which recompresses everything
+    const pdfa = level === 'high' ? 'PDF/A-1b' : 'PDF/A-2b';
+    const form = new FormData();
+    form.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
+    form.append('pdfa', pdfa);
+    const r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, { method: 'POST', body: form, headers: form.getHeaders() });
     if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
     pipeResponse(r, res, 'compressed.pdf');
+
   } catch (err) {
     console.error('compress error:', err);
     res.status(500).json({ error: err.message });
