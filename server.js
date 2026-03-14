@@ -39,23 +39,63 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
     // screen   = 72dpi  — smallest file, lowest quality (high compression)
     // ebook    = 150dpi — medium quality (medium compression)
     // printer  = 300dpi — high quality  (low compression)
-    const gsSettings = { high: 'screen', medium: 'ebook', low: 'printer' };
-    const setting = gsSettings[level] || 'ebook';
-
+    // Build Ghostscript args based on compression level
     const tmpIn  = path.join(os.tmpdir(), 'gs_in_'  + Date.now() + '.pdf');
     const tmpOut = path.join(os.tmpdir(), 'gs_out_' + Date.now() + '.pdf');
     fs.writeFileSync(tmpIn, req.file.buffer);
 
-    execFile('gs', [
+    // Base args
+    const gsArgs = [
       '-sDEVICE=pdfwrite',
       '-dCompatibilityLevel=1.4',
-      '-dPDFSETTINGS=/' + setting,
       '-dNOPAUSE',
       '-dQUIET',
       '-dBATCH',
-      '-sOutputFile=' + tmpOut,
-      tmpIn
-    ], (err, stdout, stderr) => {
+      '-dEmbedAllFonts=true',
+      '-dSubsetFonts=true',
+    ];
+
+    if (level === 'low') {
+      // Low: printer quality — 300dpi, good quality, modest size reduction
+      gsArgs.push('-dPDFSETTINGS=/printer');
+      gsArgs.push('-dColorImageResolution=300');
+      gsArgs.push('-dGrayImageResolution=300');
+      gsArgs.push('-dMonoImageResolution=300');
+
+    } else if (level === 'medium') {
+      // Medium: ebook quality — 150dpi, balanced size and quality
+      gsArgs.push('-dPDFSETTINGS=/ebook');
+      gsArgs.push('-dColorImageResolution=150');
+      gsArgs.push('-dGrayImageResolution=150');
+      gsArgs.push('-dMonoImageResolution=150');
+      gsArgs.push('-dDownsampleColorImages=true');
+      gsArgs.push('-dDownsampleGrayImages=true');
+      gsArgs.push('-dColorImageDownsampleType=/Bicubic');
+      gsArgs.push('-dGrayImageDownsampleType=/Bicubic');
+
+    } else {
+      // High: screen quality — 72dpi, maximum compression, lowest quality
+      gsArgs.push('-dPDFSETTINGS=/screen');
+      gsArgs.push('-dColorImageResolution=72');
+      gsArgs.push('-dGrayImageResolution=72');
+      gsArgs.push('-dMonoImageResolution=72');
+      gsArgs.push('-dDownsampleColorImages=true');
+      gsArgs.push('-dDownsampleGrayImages=true');
+      gsArgs.push('-dDownsampleMonoImages=true');
+      gsArgs.push('-dColorImageDownsampleType=/Bicubic');
+      gsArgs.push('-dGrayImageDownsampleType=/Bicubic');
+      gsArgs.push('-dCompressPages=true');
+      gsArgs.push('-dDetectDuplicateImages=true');
+      gsArgs.push('-dAutoFilterColorImages=false');
+      gsArgs.push('-dColorImageFilter=/DCTEncode');
+      gsArgs.push('-dAutoFilterGrayImages=false');
+      gsArgs.push('-dGrayImageFilter=/DCTEncode');
+      gsArgs.push('/ColorACSImageDict', '<</QFactor 0.9 /Blend 1 /ColorTransform 1 /HSamples [2 1 1 2] /VSamples [2 1 1 2]>>');
+    }
+
+    gsArgs.push('-sOutputFile=' + tmpOut, tmpIn);
+
+    execFile('gs', gsArgs, (err, stdout, stderr) => {
       try { fs.unlinkSync(tmpIn); } catch(e) {}
       if (err) {
         try { fs.unlinkSync(tmpOut); } catch(e) {}
