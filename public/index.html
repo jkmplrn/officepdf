@@ -247,6 +247,14 @@ var selOpt     = '';
 document.getElementById('signin-btn').addEventListener('click', doLogin);
 document.getElementById('email-input').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
 
+// Auto-fill saved email on page load
+(function(){
+  try {
+    var saved = localStorage.getItem('officepdf_email');
+    if(saved) document.getElementById('email-input').value = saved;
+  } catch(e) {}
+})();
+
 function doLogin(){
   var email = document.getElementById('email-input').value.trim().toLowerCase();
   var errEl = document.getElementById('auth-error');
@@ -256,6 +264,8 @@ function doLogin(){
   if(at===-1 || email.substring(at+1)!==DOMAIN){
     errEl.textContent='Access is restricted to @'+DOMAIN+' addresses only.'; return;
   }
+  // Save email for next time
+  try { localStorage.setItem('officepdf_email', email); } catch(e) {}
   document.getElementById('uinitials').textContent = email.substring(0,at).substring(0,2).toUpperCase();
   document.getElementById('uemail').textContent = email;
   document.getElementById('auth-screen').style.display='none';
@@ -267,7 +277,7 @@ function doLogin(){
 document.getElementById('signout-btn').addEventListener('click', function(){
   document.getElementById('app-screen').style.display='none';
   document.getElementById('auth-screen').style.display='flex';
-  document.getElementById('email-input').value='';
+  // Keep email filled in so user just clicks the button again
 });
 
 /* ── GRIDS ── */
