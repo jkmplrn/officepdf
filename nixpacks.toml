@@ -1,0 +1,2 @@
+[phases.setup]
+nixPkgs = ["ghostscript", "poppler_utils", "zip"]
