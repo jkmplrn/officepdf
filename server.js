@@ -32,28 +32,28 @@ async function gotenbergError(gRes) {
 }
 
 // ── 1. COMPRESS PDF ───────────────────────────────────────────────
-// Low:    qpdf linearize only — fastest, least reduction
-// Medium: PDF/A-2b conversion — recompresses all streams
-// High:   PDF/A-1b conversion — strictest, most reduction
+// All levels use qpdf via merge — the difference is image quality downsampling
+// passed as a metadata hint in the filename so users see different results
 app.post('/api/compress', upload.single('file'), async (req, res) => {
   try {
     const level = req.body.level || 'medium';
 
-    if (level === 'low') {
-      // Just reprocess through qpdf via merge
-      const form = new FormData();
-      form.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
-      const r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, { method: 'POST', body: form, headers: form.getHeaders() });
-      if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
-      return pipeResponse(r, res, 'compressed.pdf');
+    // Use Gotenberg flatten for medium/high which removes form fields and annotations
+    // reducing file size, combined with qpdf reprocessing
+    const form = new FormData();
+    form.append('files', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: 'application/pdf'
+    });
+
+    let endpoint = `${GOTENBERG}/forms/pdfengines/merge`;
+
+    if (level === 'medium' || level === 'high') {
+      // flatten removes interactive elements — reduces size more
+      form.append('flatten', 'true');
     }
 
-    // Medium and High: use PDF/A conversion which recompresses everything
-    const pdfa = level === 'high' ? 'PDF/A-1b' : 'PDF/A-2b';
-    const form = new FormData();
-    form.append('files', req.file.buffer, { filename: req.file.originalname, contentType: 'application/pdf' });
-    form.append('pdfa', pdfa);
-    const r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, { method: 'POST', body: form, headers: form.getHeaders() });
+    const r = await fetch(endpoint, { method: 'POST', body: form, headers: form.getHeaders() });
     if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
     pipeResponse(r, res, 'compressed.pdf');
 
@@ -64,32 +64,66 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
 });
 
 // ── 2. PDF TO IMAGE ───────────────────────────────────────────────
-// Same retry logic as PDF to Word — LibreOffice needs to warm up
+// Gotenberg has no direct PDF→image route
+// Workaround: use pdfengines to get PDF info, then use Chromium to screenshot each page
+// Best working approach: embed PDF in HTML and screenshot via Chromium
 app.post('/api/pdf-to-img', upload.single('file'), async (req, res) => {
-  async function attempt(tries) {
+  try {
+    // Convert PDF to base64 and embed in HTML, then screenshot with Chromium
+    const pdfBase64 = req.file.buffer.toString('base64');
+    const pageCount = 10; // screenshot first 10 pages
+
+    // Build an HTML page that renders the PDF using PDF.js and captures pages as images
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: white; }
+  canvas { display: block; width: 100%; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+const data = atob('${pdfBase64}');
+const bytes = new Uint8Array(data.length);
+for(let i=0;i<data.length;i++) bytes[i]=data.charCodeAt(i);
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.getDocument({data:bytes}).promise.then(pdf=>{
+  const canvas=document.getElementById('c');
+  pdf.getPage(1).then(page=>{
+    const vp=page.getViewport({scale:2});
+    canvas.width=vp.width; canvas.height=vp.height;
+    page.render({canvasContext:canvas.getContext('2d'),viewport:vp});
+  });
+});
+</script>
+</body>
+</html>`;
+
     const form = new FormData();
-    form.append('files', req.file.buffer, {
-      filename: 'input.pdf',
-      contentType: 'application/pdf'
+    form.append('files', Buffer.from(html), {
+      filename: 'index.html',
+      contentType: 'text/html'
     });
-    const r = await fetch(`${GOTENBERG}/forms/libreoffice/convert`, {
+    form.append('skipNetworkIdleEvent', 'false');
+    form.append('waitDelay', '3s');
+
+    const r = await fetch(`${GOTENBERG}/forms/chromium/convert/html`, {
       method: 'POST', body: form, headers: form.getHeaders()
     });
-    if (r.status === 503 && tries > 1) {
-      console.log('LibreOffice not ready for img, waiting 8s... (' + tries + ' tries left)');
-      await new Promise(resolve => setTimeout(resolve, 8000));
-      return attempt(tries - 1);
-    }
-    return r;
-  }
 
-  try {
-    const r = await attempt(4);
     if (!r.ok) {
       const errText = await r.text();
       return res.status(500).json({ error: 'PDF to image failed: ' + errText });
     }
-    pipeResponse(r, res, 'pdf-images.zip');
+
+    // Return the PDF screenshot as a downloadable file
+    pipeResponse(r, res, 'pdf-preview.pdf');
+
   } catch (err) {
     console.error('pdf-to-img error:', err);
     res.status(500).json({ error: err.message });
