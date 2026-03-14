@@ -32,7 +32,7 @@ async function gotenbergError(gRes) {
 }
 
 // ── 1. COMPRESS PDF ───────────────────────────────────────────────
-// Gotenberg uses qpdf under the hood — fully free, no license needed
+// Use qpdf directly via Gotenberg's merge endpoint which reprocesses/compresses
 app.post('/api/compress', upload.single('file'), async (req, res) => {
   try {
     const form = new FormData();
@@ -40,10 +40,9 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
       filename: req.file.originalname,
       contentType: 'application/pdf'
     });
-    // compress=true tells Gotenberg to run qpdf compression
-    form.append('compress', 'true');
 
-    const r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, {
+    // Gotenberg's merge with a single file runs it through qpdf which compresses it
+    const r = await fetch(`${GOTENBERG}/forms/pdfengines/merge`, {
       method: 'POST', body: form, headers: form.getHeaders()
     });
 
@@ -56,43 +55,35 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
 });
 
 // ── 2. PDF TO IMAGE ───────────────────────────────────────────────
-// Convert each PDF page to PNG using Gotenberg's screenshot route
-// We convert PDF→HTML→screenshot, or use LibreOffice export
+// Gotenberg doesn't have a native PDF→image route
+// We use Chromium's screenshot by first converting PDF pages via pdfengines flatten
+// then screenshotting — best workaround: convert PDF→HTML via LibreOffice then screenshot
 app.post('/api/pdf-to-img', upload.single('file'), async (req, res) => {
   try {
-    // Gotenberg can convert PDF to PNG via its pdfengines read + chromium screenshot
-    // Best approach: convert PDF pages to images using LibreOffice export
+    // Use LibreOffice to convert PDF to PNG images
+    // LibreOffice can export PDF as image format directly
     const form = new FormData();
     form.append('files', req.file.buffer, {
-      filename: req.file.originalname,
+      filename: 'input.pdf',
       contentType: 'application/pdf'
     });
-    // exportFormFields=false, losslessImageCompression=true exports as PNG images
-    form.append('exportType', 'png');
+    form.append('nativePageRanges', '1-20');
 
-    // Try pdfengines convert with image output
-    const r = await fetch(`${GOTENBERG}/forms/pdfengines/convert`, {
-      method: 'POST', body: form, headers: form.getHeaders()
+    const r = await fetch(`${GOTENBERG}/forms/libreoffice/convert`, {
+      method: 'POST', body: form, headers: form.getHeaders(),
+      timeout: 60000
     });
 
-    if (r.ok) return pipeResponse(r, res, 'pdf-images.zip');
+    if (r.ok) {
+      const ct = r.headers.get('content-type') || '';
+      const cd = r.headers.get('content-disposition') || '';
+      const fname = cd.match(/filename="?([^"]+)"?/) ? cd.match(/filename="?([^"]+)"?/)[1] : 'output.zip';
+      res.setHeader('Content-Type', ct);
+      res.setHeader('Content-Disposition', 'attachment; filename="pdf-images.zip"');
+      return r.body.pipe(res);
+    }
 
-    // Fallback: use LibreOffice to export PDF as images
-    const form2 = new FormData();
-    form2.append('files', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: 'application/pdf'
-    });
-    form2.append('nativePageRanges', '1-10'); // limit to first 10 pages
-    form2.append('exportType', 'png');
-
-    const r2 = await fetch(`${GOTENBERG}/forms/libreoffice/convert`, {
-      method: 'POST', body: form2, headers: form2.getHeaders()
-    });
-
-    if (r2.ok) return pipeResponse(r2, res, 'pdf-images.zip');
-
-    const errText = await r2.text();
+    const errText = await r.text();
     res.status(500).json({ error: 'PDF to image failed: ' + errText });
   } catch (err) {
     console.error('pdf-to-img error:', err);
@@ -101,22 +92,30 @@ app.post('/api/pdf-to-img', upload.single('file'), async (req, res) => {
 });
 
 // ── 3. PDF TO WORD ────────────────────────────────────────────────
-// Gotenberg doesn't convert PDF→DOCX (no tool does this perfectly)
-// Best approach: use LibreOffice via Gotenberg to at least get editable output
-// We send PDF to Gotenberg's libreoffice convert endpoint
 app.post('/api/pdf-to-word', upload.single('file'), async (req, res) => {
-  try {
+  // Retry up to 3 times — LibreOffice in Gotenberg can be slow to start
+  async function attempt(tries) {
     const form = new FormData();
     form.append('files', req.file.buffer, {
       filename: req.file.originalname,
       contentType: 'application/pdf'
     });
 
-    // Use LibreOffice to convert PDF to DOCX
     const r = await fetch(`${GOTENBERG}/forms/libreoffice/convert`, {
       method: 'POST', body: form, headers: form.getHeaders()
     });
 
+    if (r.status === 503 && tries > 1) {
+      console.log('LibreOffice 503, retrying in 3s...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      return attempt(tries - 1);
+    }
+
+    return r;
+  }
+
+  try {
+    const r = await attempt(3);
     if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
     pipeResponse(r, res, 'converted.docx');
   } catch (err) {
