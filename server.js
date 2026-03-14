@@ -31,99 +31,99 @@ async function gotenbergError(gRes) {
   return 'Gotenberg error ' + gRes.status + ': ' + txt;
 }
 
-// ── 1. COMPRESS PDF ───────────────────────────────────────────────
-// All levels use qpdf via merge — the difference is image quality downsampling
-// passed as a metadata hint in the filename so users see different results
+// ── 1. COMPRESS PDF ── via Ghostscript (installed in OfficePDF container via nixpacks) ──
 app.post('/api/compress', upload.single('file'), async (req, res) => {
   try {
     const level = req.body.level || 'medium';
+    // Ghostscript PDF settings:
+    // screen   = 72dpi  — smallest file, lowest quality (high compression)
+    // ebook    = 150dpi — medium quality (medium compression)
+    // printer  = 300dpi — high quality  (low compression)
+    const gsSettings = { high: 'screen', medium: 'ebook', low: 'printer' };
+    const setting = gsSettings[level] || 'ebook';
 
-    // Use Gotenberg flatten for medium/high which removes form fields and annotations
-    // reducing file size, combined with qpdf reprocessing
-    const form = new FormData();
-    form.append('files', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: 'application/pdf'
+    const tmpIn  = path.join(os.tmpdir(), 'gs_in_'  + Date.now() + '.pdf');
+    const tmpOut = path.join(os.tmpdir(), 'gs_out_' + Date.now() + '.pdf');
+    fs.writeFileSync(tmpIn, req.file.buffer);
+
+    execFile('gs', [
+      '-sDEVICE=pdfwrite',
+      '-dCompatibilityLevel=1.4',
+      '-dPDFSETTINGS=/' + setting,
+      '-dNOPAUSE',
+      '-dQUIET',
+      '-dBATCH',
+      '-sOutputFile=' + tmpOut,
+      tmpIn
+    ], (err, stdout, stderr) => {
+      try { fs.unlinkSync(tmpIn); } catch(e) {}
+      if (err) {
+        try { fs.unlinkSync(tmpOut); } catch(e) {}
+        console.error('gs compress error:', stderr);
+        return res.status(500).json({ error: 'Ghostscript error: ' + stderr });
+      }
+      const result = fs.readFileSync(tmpOut);
+      try { fs.unlinkSync(tmpOut); } catch(e) {}
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="compressed.pdf"');
+      res.send(result);
     });
-
-    let endpoint = `${GOTENBERG}/forms/pdfengines/merge`;
-
-    if (level === 'medium' || level === 'high') {
-      // flatten removes interactive elements — reduces size more
-      form.append('flatten', 'true');
-    }
-
-    const r = await fetch(endpoint, { method: 'POST', body: form, headers: form.getHeaders() });
-    if (!r.ok) return res.status(r.status).json({ error: await gotenbergError(r) });
-    pipeResponse(r, res, 'compressed.pdf');
-
   } catch (err) {
     console.error('compress error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── 2. PDF TO IMAGE ───────────────────────────────────────────────
-// Gotenberg has no direct PDF→image route
-// Workaround: use pdfengines to get PDF info, then use Chromium to screenshot each page
-// Best working approach: embed PDF in HTML and screenshot via Chromium
+// ── 2. PDF TO IMAGE ── via pdftoppm (poppler-utils) ──────────────
 app.post('/api/pdf-to-img', upload.single('file'), async (req, res) => {
   try {
-    // Convert PDF to base64 and embed in HTML, then screenshot with Chromium
-    const pdfBase64 = req.file.buffer.toString('base64');
-    const pageCount = 10; // screenshot first 10 pages
+    const tmpIn  = path.join(os.tmpdir(), 'pdf_in_' + Date.now() + '.pdf');
+    const tmpPfx = path.join(os.tmpdir(), 'pdf_pg_' + Date.now());
+    fs.writeFileSync(tmpIn, req.file.buffer);
 
-    // Build an HTML page that renders the PDF using PDF.js and captures pages as images
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: white; }
-  canvas { display: block; width: 100%; margin-bottom: 10px; }
-</style>
-</head>
-<body>
-<canvas id="c"></canvas>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>
-const data = atob('${pdfBase64}');
-const bytes = new Uint8Array(data.length);
-for(let i=0;i<data.length;i++) bytes[i]=data.charCodeAt(i);
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-pdfjsLib.getDocument({data:bytes}).promise.then(pdf=>{
-  const canvas=document.getElementById('c');
-  pdf.getPage(1).then(page=>{
-    const vp=page.getViewport({scale:2});
-    canvas.width=vp.width; canvas.height=vp.height;
-    page.render({canvasContext:canvas.getContext('2d'),viewport:vp});
-  });
-});
-</script>
-</body>
-</html>`;
+    // pdftoppm converts each PDF page to a PNG file
+    execFile('pdftoppm', ['-r', '150', '-png', tmpIn, tmpPfx], (err, stdout, stderr) => {
+      try { fs.unlinkSync(tmpIn); } catch(e) {}
+      if (err) {
+        console.error('pdftoppm error:', stderr);
+        return res.status(500).json({ error: 'PDF to image error: ' + stderr });
+      }
 
-    const form = new FormData();
-    form.append('files', Buffer.from(html), {
-      filename: 'index.html',
-      contentType: 'text/html'
+      // Find all generated PNG files
+      const dir   = path.dirname(tmpPfx);
+      const base  = path.basename(tmpPfx);
+      const files = fs.readdirSync(dir)
+        .filter(f => f.startsWith(base) && f.endsWith('.png'))
+        .sort()
+        .map(f => path.join(dir, f));
+
+      if (!files.length) {
+        return res.status(500).json({ error: 'No images were generated.' });
+      }
+
+      // Zip all PNG files
+      const zipPath = tmpPfx + '.zip';
+      execFile('zip', ['-j', zipPath, ...files], (zerr) => {
+        files.forEach(f => { try { fs.unlinkSync(f); } catch(e) {} });
+        if (zerr) {
+          // fallback: send first page only
+          const first = files[0];
+          if (fs.existsSync(first)) {
+            const data = fs.readFileSync(first);
+            try { fs.unlinkSync(first); } catch(e) {}
+            res.setHeader('Content-Type', 'image/png');
+            res.setHeader('Content-Disposition', 'attachment; filename="page-1.png"');
+            return res.send(data);
+          }
+          return res.status(500).json({ error: 'Could not create zip.' });
+        }
+        const zipData = fs.readFileSync(zipPath);
+        try { fs.unlinkSync(zipPath); } catch(e) {}
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', 'attachment; filename="pdf-images.zip"');
+        res.send(zipData);
+      });
     });
-    form.append('skipNetworkIdleEvent', 'false');
-    form.append('waitDelay', '3s');
-
-    const r = await fetch(`${GOTENBERG}/forms/chromium/convert/html`, {
-      method: 'POST', body: form, headers: form.getHeaders()
-    });
-
-    if (!r.ok) {
-      const errText = await r.text();
-      return res.status(500).json({ error: 'PDF to image failed: ' + errText });
-    }
-
-    // Return the PDF screenshot as a downloadable file
-    pipeResponse(r, res, 'pdf-preview.pdf');
-
   } catch (err) {
     console.error('pdf-to-img error:', err);
     res.status(500).json({ error: err.message });
