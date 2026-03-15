@@ -56,44 +56,57 @@ app.post('/api/compress', upload.single('file'), async (req, res) => {
     ];
 
     if (level === 'low') {
-      // Low: printer quality — 300dpi, good quality, modest size reduction
-      gsArgs.push('-dPDFSETTINGS=/printer');
-      gsArgs.push('-dColorImageResolution=300');
-      gsArgs.push('-dGrayImageResolution=300');
-      gsArgs.push('-dMonoImageResolution=300');
+      // Low: recompress streams, subset fonts, remove thumbnails
+      // Safe for vector/CAD drawings — no quality loss
+      gsArgs.push('-dPDFSETTINGS=/prepress');
+      gsArgs.push('-dCompressPages=true');
+      gsArgs.push('-dSubsetFonts=true');
+      gsArgs.push('-dEmbedAllFonts=true');
+      gsArgs.push('-dDetectDuplicateImages=true');
+      gsArgs.push('-dCreateJobTicket=false');
+      gsArgs.push('-dPreserveEPSInfo=false');
+      gsArgs.push('-dPreserveOPIComments=false');
 
     } else if (level === 'medium') {
-      // Medium: ebook quality — 150dpi, balanced size and quality
-      gsArgs.push('-dPDFSETTINGS=/ebook');
+      // Medium: flatten transparency + compress streams
+      // Good for drawings with transparency layers (common in CAD exports)
+      gsArgs.push('-dPDFSETTINGS=/printer');
+      gsArgs.push('-dCompressPages=true');
+      gsArgs.push('-dSubsetFonts=true');
+      gsArgs.push('-dDetectDuplicateImages=true');
+      gsArgs.push('-dFlattenTransparency=true');
+      gsArgs.push('-dHaveTransparency=false');
+      gsArgs.push('-dColorConversionStrategy=/LeaveColorUnchanged');
+      gsArgs.push('-dConvertCMYKImagesToRGB=false');
+      gsArgs.push('-dPreserveEPSInfo=false');
+      gsArgs.push('-dCreateJobTicket=false');
+
+    } else {
+      // High: rasterize entire drawing at 150dpi
+      // Converts all vectors to pixels — maximum size reduction for complex drawings
+      // Loses vector sharpness but dramatically reduces file size
+      gsArgs.push('-dPDFSETTINGS=/screen');
+      gsArgs.push('-dCompressPages=true');
+      gsArgs.push('-dSubsetFonts=true');
+      gsArgs.push('-dDetectDuplicateImages=true');
+      gsArgs.push('-dFlattenTransparency=true');
+      gsArgs.push('-r150');  // rasterize at 150dpi
       gsArgs.push('-dColorImageResolution=150');
       gsArgs.push('-dGrayImageResolution=150');
       gsArgs.push('-dMonoImageResolution=150');
       gsArgs.push('-dDownsampleColorImages=true');
       gsArgs.push('-dDownsampleGrayImages=true');
-      gsArgs.push('-dColorImageDownsampleType=/Bicubic');
-      gsArgs.push('-dGrayImageDownsampleType=/Bicubic');
-
-    } else {
-      // High: screen quality — 72dpi, maximum compression, lowest quality
-      gsArgs.push('-dPDFSETTINGS=/screen');
-      gsArgs.push('-dColorImageResolution=72');
-      gsArgs.push('-dGrayImageResolution=72');
-      gsArgs.push('-dMonoImageResolution=72');
-      gsArgs.push('-dDownsampleColorImages=true');
-      gsArgs.push('-dDownsampleGrayImages=true');
       gsArgs.push('-dDownsampleMonoImages=true');
       gsArgs.push('-dColorImageDownsampleType=/Bicubic');
       gsArgs.push('-dGrayImageDownsampleType=/Bicubic');
-      gsArgs.push('-dCompressPages=true');
-      gsArgs.push('-dDetectDuplicateImages=true');
       gsArgs.push('-dAutoFilterColorImages=false');
       gsArgs.push('-dColorImageFilter=/DCTEncode');
       gsArgs.push('-dAutoFilterGrayImages=false');
       gsArgs.push('-dGrayImageFilter=/DCTEncode');
-      gsArgs.push('/ColorACSImageDict', '<</QFactor 0.9 /Blend 1 /ColorTransform 1 /HSamples [2 1 1 2] /VSamples [2 1 1 2]>>');
     }
 
-    gsArgs.push('-sOutputFile=' + tmpOut, tmpIn);
+    gsArgs.push('-sOutputFile=' + tmpOut);
+    gsArgs.push(tmpIn);
 
     execFile('gs', gsArgs, (err, stdout, stderr) => {
       try { fs.unlinkSync(tmpIn); } catch(e) {}
