@@ -183,35 +183,41 @@ async function gotenbergError(gRes) {
 
 // ── PDF API routes (all require auth) ────────────────────────────
 
-// 1. COMPRESS PDF
+// 1. COMPRESS PDF — 3-stage pipeline: pypdf → pikepdf → Ghostscript
 app.post('/api/compress', requireAuth, upload.single('file'), async (req, res) => {
+  const level  = req.body.level || 'medium';
+  const tmpIn  = path.join(os.tmpdir(), 'cmp_in_'  + Date.now() + '.pdf');
+  const tmpOut = path.join(os.tmpdir(), 'cmp_out_' + Date.now() + '.pdf');
+
   try {
-    const level  = req.body.level || 'medium';
-    const tmpIn  = path.join(os.tmpdir(), 'gs_in_'  + Date.now() + '.pdf');
-    const tmpOut = path.join(os.tmpdir(), 'gs_out_' + Date.now() + '.pdf');
     fs.writeFileSync(tmpIn, req.file.buffer);
+    const scriptPath = path.join(__dirname, 'compress.py');
 
-    const gsArgs = ['-sDEVICE=pdfwrite','-dCompatibilityLevel=1.4','-dNOPAUSE','-dQUIET','-dBATCH','-dEmbedAllFonts=true','-dSubsetFonts=true'];
-
-    if (level === 'low') {
-      gsArgs.push('-dPDFSETTINGS=/prepress','-dCompressPages=true','-dDetectDuplicateImages=true','-dCreateJobTicket=false','-dPreserveEPSInfo=false','-dPreserveOPIComments=false');
-    } else if (level === 'medium') {
-      gsArgs.push('-dPDFSETTINGS=/printer','-dCompressPages=true','-dDetectDuplicateImages=true','-dFlattenTransparency=true','-dHaveTransparency=false','-dColorConversionStrategy=/LeaveColorUnchanged','-dPreserveEPSInfo=false','-dCreateJobTicket=false');
-    } else {
-      gsArgs.push('-dPDFSETTINGS=/screen','-dCompressPages=true','-dDetectDuplicateImages=true','-dFlattenTransparency=true','-r150','-dColorImageResolution=150','-dGrayImageResolution=150','-dMonoImageResolution=150','-dDownsampleColorImages=true','-dDownsampleGrayImages=true','-dDownsampleMonoImages=true','-dColorImageDownsampleType=/Bicubic','-dGrayImageDownsampleType=/Bicubic','-dAutoFilterColorImages=false','-dColorImageFilter=/DCTEncode','-dAutoFilterGrayImages=false','-dGrayImageFilter=/DCTEncode');
-    }
-    gsArgs.push('-sOutputFile=' + tmpOut); gsArgs.push(tmpIn);
-
-    execFile('gs', gsArgs, (err, stdout, stderr) => {
+    execFile('python3', [scriptPath, tmpIn, tmpOut, level], { timeout: 120000 }, (err, stdout, stderr) => {
       try { fs.unlinkSync(tmpIn); } catch(e) {}
-      if (err) { try { fs.unlinkSync(tmpOut); } catch(e) {} return res.status(500).json({ error: 'Ghostscript error: ' + stderr }); }
+
+      if (err) {
+        try { fs.unlinkSync(tmpOut); } catch(e) {}
+        console.error('compress.py error:', stderr);
+        return res.status(500).json({ error: 'Compression failed: ' + (stderr || err.message) });
+      }
+
+      if (!fs.existsSync(tmpOut)) {
+        return res.status(500).json({ error: 'Compression produced no output.' });
+      }
+
+      console.log('compress result:', stdout.trim());
       const result = fs.readFileSync(tmpOut);
       try { fs.unlinkSync(tmpOut); } catch(e) {}
+
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename="compressed.pdf"');
       res.send(result);
     });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    try { fs.unlinkSync(tmpIn); } catch(e) {}
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 2. PDF TO IMAGE
