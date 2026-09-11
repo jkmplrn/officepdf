@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>OfficePDF — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--red:#E8372B;--red-dark:#c22d22;--red-light:#fdf1f0;--charcoal:#1a1a1a;--mid:#5a5a5a;--light:#f5f4f2;--border:#e0ddd8;--fh:'DM Serif Display',serif;--fb:'DM Sans',sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fb);background:linear-gradient(135deg,#fff8f7 0%,#f5f4f2 60%,#fdecea 100%);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:#fff;border-radius:24px;padding:52px 48px;width:100%;max-width:440px;box-shadow:0 8px 48px rgba(0,0,0,.1)}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:36px}
+.logo-box{width:40px;height:40px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.logo-box svg{width:22px;height:22px;fill:#fff}
+.logo-name{font-family:var(--fh);font-size:1.5rem}
+h1{font-family:var(--fh);font-size:1.9rem;margin-bottom:8px}
+.sub{color:var(--mid);font-size:.92rem;margin-bottom:32px;line-height:1.5}
+.flabel{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--mid);display:block;margin-bottom:8px}
+input{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--fb);font-size:.95rem;background:#fafafa;outline:none;margin-bottom:20px}
+input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(232,55,43,.1);background:#fff}
+button{width:100%;padding:15px;background:var(--red);color:#fff;border:none;border-radius:10px;font-family:var(--fb);font-size:1rem;font-weight:600;cursor:pointer}
+button:hover{background:var(--red-dark)}
+button:disabled{background:#ccc;cursor:not-allowed}
+.err{color:var(--red);font-size:.85rem;margin-top:10px;min-height:18px;font-weight:500}
+.note{margin-top:24px;font-size:.8rem;color:#aaa;text-align:center}
+@media(max-width:480px){.card{padding:36px 24px}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo-row">
+    <div class="logo-box"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg></div>
+    <span class="logo-name">OfficePDF</span>
+  </div>
+  <h1>Welcome back</h1>
+  <p class="sub">Sign in to access your PDF toolkit.</p>
+  <label class="flabel" for="username">Username</label>
+  <input id="username" type="text" placeholder="Enter your username" autocomplete="username" spellcheck="false"/>
+  <label class="flabel" for="password">Password</label>
+  <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password"/>
+  <button id="login-btn">Sign In</button>
+  <div class="err" id="err"></div>
+  <p class="note">Access is by invitation only. Contact your administrator.</p>
+</div>
+<script>
+(function(){
+  // Restore saved username
+  try { var s = localStorage.getItem('officepdf_user'); if(s) document.getElementById('username').value = s; } catch(e){}
+
+  function doLogin(){
+    var u = document.getElementById('username').value.trim();
+    var p = document.getElementById('password').value;
+    var err = document.getElementById('err');
+    var btn = document.getElementById('login-btn');
+    err.textContent = '';
+    if(!u || !p){ err.textContent = 'Please enter your username and password.'; return; }
+    btn.disabled = true; btn.textContent = 'Signing in...';
+    fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    })
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+    .then(function(res){
+      if(res.ok){
+        try { localStorage.setItem('officepdf_user', u); } catch(e){}
+        window.location.href = '/app';
+      } else {
+        err.textContent = res.data.error || 'Login failed.';
+        btn.disabled = false; btn.textContent = 'Sign In';
+      }
+    })
+    .catch(function(){ err.textContent = 'Network error. Please try again.'; btn.disabled = false; btn.textContent = 'Sign In'; });
+  }
+
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('password').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  document.getElementById('username').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('password').focus(); });
+})();
+</script>
+</body>
+</html>
