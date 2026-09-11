@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>OfficePDF – Dewan Architects</title>
+<title>OfficePDF</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <style>
 :root {
@@ -130,19 +130,19 @@ nav{background:#fff;border-bottom:1px solid var(--border);height:64px;padding:0 
 <body>
 
 <!-- LOGIN -->
-<div id="auth-screen">
+<div id="auth-screen" style="display:none">
   <div class="auth-card">
     <div class="logo-row">
       <div class="logo-box"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg></div>
       <span class="logo-name">OfficePDF</span>
     </div>
     <h1>Welcome</h1>
-    <p class="auth-sub">Enter your <strong>@dewan-architects.com</strong> email to continue.</p>
+    <p class="auth-sub">Enter your <strong>@your-company.com</strong> email to continue.</p>
     <label class="flabel" for="email-input">Work Email</label>
-    <input id="email-input" type="text" placeholder="you@dewan-architects.com" autocomplete="off" spellcheck="false" />
+    <input id="email-input" type="text" placeholder="you@your-company.com" autocomplete="off" spellcheck="false" />
     <button id="signin-btn">Access Toolkit</button>
     <div id="auth-error"></div>
-    <p class="auth-note">Only @dewan-architects.com addresses are permitted.</p>
+    <p class="auth-note">Only @your-company.com addresses are permitted.</p>
   </div>
 </div>
 
@@ -164,7 +164,7 @@ nav{background:#fff;border-bottom:1px solid var(--border);height:64px;padding:0 
 
   <div class="hero">
     <h2>Every PDF tool your office <em>needs.</em></h2>
-    <p>Powered by Stirling-PDF — private, self-hosted, no file leaves your server.</p>
+    <p>Private, self-hosted — no file ever leaves your server.</p>
   </div>
 
   <div class="tools-wrap">
@@ -174,7 +174,7 @@ nav{background:#fff;border-bottom:1px solid var(--border);height:64px;padding:0 
     <div class="tgrid" id="grid2"></div>
   </div>
 
-  <div class="footer">OfficePDF — Dewan Architects. Powered by Stirling-PDF. Files never leave your server.</div>
+  <div class="footer">OfficePDF — OfficePDF. Powered by Stirling-PDF. Files never leave your server.</div>
 </div>
 
 <!-- MODAL -->
@@ -209,7 +209,7 @@ nav{background:#fff;border-bottom:1px solid var(--border);height:64px;padding:0 
 <script>
 (function(){
 
-var DOMAIN = 'dewan-architects.com';
+var DOMAIN = 'your-company.com';
 
 // live:true  = fully wired to Stirling-PDF
 // live:false = UI shown but button disabled (easy to enable later)
@@ -230,54 +230,43 @@ var PDF_TOOLS = [
 
 var CONV_TOOLS = [
   { id:'p2w', icon:'&#128221;', label:'PDF to Word',  desc:'Convert PDF to editable .docx file.',  action:'Convert to Word',  fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#e8f0fe', api:'/api/pdf-to-word', live:true  },
+  { id:'p2d', icon:'&#9999;',   label:'PDF to DXF',   desc:'Convert PDF drawings to editable DXF format.',  action:'Convert to DXF',  fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#fff3e0', api:'/api/pdf-to-dxf',  live:true  },
   { id:'p2e', icon:'&#128202;', label:'PDF to Excel', desc:'Extract tables to spreadsheet.',        action:'Convert to Excel', fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#e6f4ea', api:null,               live:false },
   { id:'p2p', icon:'&#128209;', label:'PDF to PPT',   desc:'Turn PDF into editable slides.',        action:'Convert to PPT',   fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#fce8e6', api:null,               live:false },
   { id:'w2p', icon:'&#128292;', label:'Word to PDF',  desc:'Convert .docx files to PDF.',           action:'Convert to PDF',   fmt:'.doc,.docx', accept:'.doc,.docx', multi:false, color:'#e8f0fe', api:'/api/word-to-pdf', live:false },
   { id:'e2p', icon:'&#128200;', label:'Excel to PDF', desc:'Convert spreadsheets to PDF.',          action:'Convert to PDF',   fmt:'.xls,.xlsx', accept:'.xls,.xlsx', multi:false, color:'#e6f4ea', api:null,               live:false },
   { id:'s2p', icon:'&#127919;', label:'PPT to PDF',   desc:'Convert presentations to PDF.',         action:'Convert to PDF',   fmt:'.ppt,.pptx', accept:'.ppt,.pptx', multi:false, color:'#fce8e6', api:null,               live:false },
   { id:'i2p', icon:'&#128444;', label:'Image to PDF', desc:'Convert JPG or PNG images into a PDF.', action:'Convert to PDF',   fmt:'Image files', accept:'image/*',   multi:true,  color:'#fff8e1', api:'/api/img-to-pdf',  live:false },
-  { id:'p2i', icon:'&#128247;', label:'PDF to Image', desc:'Export PDF pages as PNG images.',       action:'Export Images',    fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#fce4ec', api:'/api/pdf-to-img',  live:true  }
+  { id:'p2i', icon:'&#128247;', label:'PDF to Image', desc:'Export PDF pages as high-resolution images (PNG via PDF preview).',       action:'Export Images',    fmt:'.pdf',       accept:'.pdf',       multi:false, color:'#fce4ec', api:'/api/pdf-to-img',  live:true  }
 ];
 
 var activeTool = null;
 var selFiles   = [];
 var selOpt     = '';
 
-/* ── AUTH ── */
-document.getElementById('signin-btn').addEventListener('click', doLogin);
-document.getElementById('email-input').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-
-// Auto-fill saved email on page load
-(function(){
-  try {
-    var saved = localStorage.getItem('officepdf_email');
-    if(saved) document.getElementById('email-input').value = saved;
-  } catch(e) {}
-})();
-
-function doLogin(){
-  var email = document.getElementById('email-input').value.trim().toLowerCase();
-  var errEl = document.getElementById('auth-error');
-  errEl.textContent = '';
-  if(!email){ errEl.textContent='Please enter your email address.'; return; }
-  var at = email.indexOf('@');
-  if(at===-1 || email.substring(at+1)!==DOMAIN){
-    errEl.textContent='Access is restricted to @'+DOMAIN+' addresses only.'; return;
-  }
-  // Save email for next time
-  try { localStorage.setItem('officepdf_email', email); } catch(e) {}
-  document.getElementById('uinitials').textContent = email.substring(0,at).substring(0,2).toUpperCase();
-  document.getElementById('uemail').textContent = email;
-  document.getElementById('auth-screen').style.display='none';
-  var app=document.getElementById('app-screen');
-  app.style.display='flex'; app.style.flexDirection='column';
-  buildGrids();
-}
+/* ── AUTH — handled server-side, just load user info ── */
+fetch('/auth/me')
+  .then(function(r){ return r.json(); })
+  .then(function(user){
+    if(!user.username){ window.location.href='/'; return; }
+    var uname = user.username;
+    document.getElementById('uinitials').textContent = uname.substring(0,2).toUpperCase();
+    document.getElementById('uemail').textContent = uname;
+    // Show admin link if admin
+    if(user.role === 'admin'){
+      var adminLink = document.createElement('a');
+      adminLink.href='/admin'; adminLink.textContent='Admin'; adminLink.style.cssText='padding:8px 18px;background:transparent;border:1.5px solid var(--border);border-radius:8px;font-family:var(--fb);font-size:.85rem;font-weight:500;color:var(--mid);cursor:pointer;text-decoration:none;';
+      document.getElementById('signout-btn').before(adminLink);
+    }
+    document.getElementById('auth-screen').style.display='none';
+    var app=document.getElementById('app-screen');
+    app.style.display='flex'; app.style.flexDirection='column';
+    buildGrids();
+  })
+  .catch(function(){ window.location.href='/'; });
 
 document.getElementById('signout-btn').addEventListener('click', function(){
-  document.getElementById('app-screen').style.display='none';
-  document.getElementById('auth-screen').style.display='flex';
-  // Keep email filled in so user just clicks the button again
+  fetch('/auth/logout',{method:'POST'}).then(function(){ window.location.href='/'; });
 });
 
 /* ── GRIDS ── */
